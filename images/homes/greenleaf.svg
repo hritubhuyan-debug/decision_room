@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="Placeholder photo for Greenleaf Residency">
+<rect width="1600" height="900" fill="#d2d9d6"/>
+<g fill="none" stroke="#9a9a94" stroke-width="10" stroke-linejoin="round">
+<rect x="560" y="300" width="480" height="330"/><path d="M520 320 800 140 1080 320"/>
+<rect x="620" y="370" width="110" height="90"/><rect x="870" y="370" width="110" height="90"/><rect x="745" y="490" width="110" height="140"/></g>
+<text x="800" y="730" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="44" fill="#6b6b66">Greenleaf Residency</text>
+<text x="800" y="790" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="30" fill="#85857f">Placeholder photo · replace with images/homes/greenleaf.jpg</text>
+</svg>

@@ -1,0 +1,53 @@
+/* Design tokens: built from the moodboard (navy / teal / sky blue / beige / white,
+   Helvetica Neue, soft white dashboard cards). The ONLY place colours, type and spacing live. */
+:root {
+  /* Palette (moodboard) */
+  --navy: #2F4156;
+  --teal: #567C8D;        /* large text, fills, white-on-teal (4.5:1) */
+  --teal-ink: #4A6B7A;    /* small teal text on white or beige (5:1+) */
+  --sky: #C8D9E6;
+  --sky-tint: #EAF1F7;
+  --beige: #F5EFEB;
+  --white: #FFFFFF;
+
+  /* Roles */
+  --c-bg: var(--beige);
+  --c-surface: var(--white);
+  --c-surface-2: #FAF7F5;
+  --c-border: #E6E0DB;
+  --c-border-strong: #B9C4CE;
+  --c-text: var(--navy);
+  --c-text-2: #5E6B78;
+  --c-accent: var(--teal);
+  --c-accent-ink: var(--teal-ink);
+  --c-accent-tint: var(--sky-tint);
+  --c-ink-strong: var(--navy);
+  --c-track: #E3E8ED;
+  --c-warn: #7A4A24;
+  --c-warn-tint: #F6EAE0;
+  --c-ai: var(--teal);
+  --c-ai-tint: var(--sky-tint);
+
+  /* Type: Helvetica Neue, light weights for big numbers, medium for labels */
+  --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-bold: 700;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 26px;
+  --fs-xxl: 34px;
+  --fs-display: 44px;
+
+  /* Space, radius, shadow, motion */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 999px;
+  --shadow: 0 1px 2px rgba(47,65,86,.05), 0 8px 24px rgba(47,65,86,.07);
+  --shadow-lift: 0 2px 4px rgba(47,65,86,.06), 0 16px 40px rgba(47,65,86,.12);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --dur: 320ms;
+  --tap: 44px;
+}
