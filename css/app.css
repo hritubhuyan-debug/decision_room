@@ -500,3 +500,57 @@ a { color: var(--c-accent-ink); }
 @media (prefers-reduced-motion: reduce) { .deck .swipe-card, .deck-progress span { transition: none; } }
 .deck .stamp { top: 56px; }
 .swipe-pair .swipe-or { align-self: center; }
+
+/* ---------- Deck v2: photo-forward cards, like the reference recording ---------- */
+.deck-screen { padding-top: var(--s-3); }
+.deck-head { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; text-align: center; margin-bottom: var(--s-3); }
+.deck-head b { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--navy); }
+.deck-back { width: 40px; height: 40px; border: 0; background: none; font-size: 28px; line-height: 1; color: var(--navy); cursor: pointer; border-radius: 50%; }
+.deck-back:hover { background: var(--white); }
+.deck-meta { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--c-text-2); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.deck-progress { margin-bottom: var(--s-4); }
+.deck { min-height: 420px; max-height: 560px; margin-right: 14px; }
+.deck .deck-card { padding: 0; gap: 0; justify-content: flex-start; align-items: stretch; text-align: left; border-radius: 24px; overflow: hidden; background: var(--white); }
+.deck .deck-card[data-pos="1"] { transform: translateX(14px) scale(.955); }
+.deck .deck-card[data-pos="2"] { transform: translateX(26px) scale(.91); opacity: .8; }
+.deck .deck-card[data-pos="3"] { transform: translateX(26px) scale(.91); opacity: 0; }
+.scene { position: relative; flex: 1; display: grid; place-items: center; overflow: hidden; color: var(--navy); }
+.scene::before, .scene::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.35); }
+.scene::before { width: 70%; aspect-ratio: 1; left: -18%; top: -14%; }
+.scene::after { width: 46%; aspect-ratio: 1; right: -10%; bottom: -12%; background: rgba(255,255,255,.22); }
+.scene-icon { position: relative; z-index: 1; opacity: .9; }
+.tint-sky { background: linear-gradient(160deg, #DCE7F0, #C8D9E6); }
+.tint-teal { background: linear-gradient(160deg, #B9CCD5, #8FAEBB); color: #1F3442; }
+.tint-beige { background: linear-gradient(160deg, #F7F1EB, #E7DCCF); }
+.tint-navy { background: linear-gradient(160deg, #46607A, #2F4156); color: #EAF1F7; }
+.deck-caption { padding: var(--s-4) var(--s-4) var(--s-5); display: flex; flex-direction: column; gap: 4px; background: var(--white); }
+.deck-caption b { font-size: var(--fs-xl); font-weight: var(--fw-medium); line-height: 1.2; letter-spacing: -0.01em; color: var(--navy); }
+.deck-caption span { font-size: var(--fs-sm); color: var(--c-text-2); }
+.deck-tag { position: absolute; top: var(--s-3); left: var(--s-3); z-index: 3; padding: 4px 10px; border-radius: 6px; background: var(--white); font-size: 10px; font-weight: var(--fw-bold); letter-spacing: .08em; text-transform: uppercase; color: var(--navy); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.deck .stamp { top: 22px; z-index: 3; background: rgba(255,255,255,.85); border-width: 3px; font-size: var(--fs-md); padding: 4px 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: .04em; max-width: 60%; }
+.deck .stamp-like { left: auto; right: auto; left: 18px; top: 56px; transform: rotate(-12deg); opacity: var(--right); border-color: var(--teal); color: var(--teal-ink); }
+.deck .stamp-nope { right: 18px; top: 56px; transform: rotate(12deg); opacity: var(--left); border-color: #B5674A; color: #9A4F33; }
+.deck .swipe-single { background: var(--white); }
+.pair-scene { position: relative; flex: 1; display: grid; grid-template-columns: 1fr 1fr; }
+.pair-scene .swipe-opt { border-radius: 0; min-height: 0; height: auto; padding: var(--s-5) var(--s-3); gap: var(--s-3); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.pair-scene .swipe-opt b { position: relative; z-index: 1; font-size: var(--fs-lg); font-weight: var(--fw-medium); line-height: 1.2; }
+.pair-scene .swipe-opt[data-side="0"] { filter: brightness(calc(1 - var(--right) * .25)); }
+.pair-scene .swipe-opt[data-side="1"] { filter: brightness(calc(1 - var(--left) * .25)); }
+.opt-hint { position: relative; z-index: 1; font-size: var(--fs-xs); opacity: .75; }
+.pair-or { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 2; width: 40px; height: 40px; border-radius: 50%; background: var(--white); display: grid; place-items: center; font-size: var(--fs-sm); color: var(--navy); box-shadow: var(--shadow); }
+.deck-buttons { align-items: flex-start; gap: var(--s-5); margin-top: var(--s-2); }
+.round-btn.is-undo .round-glyph { width: 36px; height: 36px; margin-top: 12px; font-size: 14px; color: var(--c-text-2); }
+.round-btn.is-undo[disabled] { opacity: .4; cursor: default; }
+.round-btn .round-glyph { width: 60px; height: 60px; }
+/* First-time coach mark */
+.coach { position: absolute; inset: 0 -14px 0 0; z-index: 90; border-radius: 24px; background: rgba(20,30,42,.95); color: var(--white); display: grid; place-items: center; text-align: center; padding: var(--s-5); animation: coach-in 260ms var(--ease); }
+.coach-in { max-width: 300px; display: flex; flex-direction: column; align-items: center; gap: var(--s-3); }
+.coach h2 { margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-medium); }
+.coach p { margin: 0; font-size: var(--fs-sm); opacity: .8; line-height: 1.45; }
+.coach-demo { display: flex; align-items: center; gap: var(--s-4); margin: var(--s-3) 0; }
+.coach-side { font-size: var(--fs-xs); opacity: .85; line-height: 1.5; }
+.coach-card { width: 76px; height: 92px; border-radius: 14px; border: 1.5px dashed rgba(255,255,255,.6); background: rgba(255,255,255,.12); display: grid; place-items: center; animation: coach-wiggle 2.2s var(--ease) infinite; }
+.coach-btn { margin-top: var(--s-3); border: 0; border-radius: var(--r-pill); background: var(--white); color: var(--navy); font: inherit; font-weight: var(--fw-bold); font-size: var(--fs-sm); letter-spacing: .06em; text-transform: uppercase; padding: 14px 26px; cursor: pointer; }
+@keyframes coach-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes coach-wiggle { 0%,100% { transform: rotate(0); } 25% { transform: translateX(-14px) rotate(-10deg); } 60% { transform: translateX(14px) rotate(10deg); } }
+@media (prefers-reduced-motion: reduce) { .coach, .coach-card { animation: none; } }

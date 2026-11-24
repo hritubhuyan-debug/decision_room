@@ -69,19 +69,19 @@
   //  2. "Trade-off": TWO options that compete. Swipe toward the one you'd pick.
   var CARDS = [
     { id: 'household', type: 'chips', q: 'Who\u2019s moving in with you?', show: function () { return true; } },
-    { id: 'k-schools', f: { schools: 1 }, text: 'Good schools close by', sub: 'Within a short drive or walk', icon: 'M3 9l9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5', show: function (m, hh) { return m !== 'invest' && hh.indexOf('children') >= 0; } },
-    { id: 'k-parks', f: { parks: 1 }, text: 'A park or lake nearby', sub: 'For walks, kids or a dog', icon: 'M12 3l5 8H7zM12 11v10M8 21h8', show: function (m) { return m !== 'invest'; } },
-    { id: 'k-shops', f: { shops: 1 }, text: 'Shops and caf\u00e9s you can walk to', sub: 'Groceries, pharmacy, a coffee', icon: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2', show: function () { return true; } },
-    { id: 'k-safety', f: { safety: 1 }, text: 'Streets that feel safe at night', sub: 'Well lit, settled, walkable', icon: 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z', show: function () { return true; } },
-    { id: 'k-health', f: { health: 1 }, text: 'A hospital within easy reach', sub: 'About 2 km or less', icon: 'M12 6v12M6 12h12', show: function (m) { return m !== 'invest'; } },
-    { id: 'k-transit', f: { transit: 1 }, text: 'A metro station nearby', sub: 'Good for everyone at home, and for resale', icon: 'M7 3h10v13H7zM7 11h10M9 20l-2 2M15 20l2 2', show: function () { return true; } },
-    { id: 'k-community', f: { community: 1 }, text: 'A gated society with a clubhouse', sub: 'Pool, gym, play areas, security', icon: 'M4 21V9l8-5 8 5v12M9 21v-6h6v6', show: function () { return true; } },
-    { id: 'k-rent', f: { investment: 1 }, text: 'Strong rental demand', sub: 'Easy to find tenants', icon: 'M4 12l8-7 8 7M9 20v-6h6v6', show: function (m) { return m !== 'live'; } },
-    { id: 'k-resale', f: { investment: 1, transit: 0.5 }, text: 'Easy to resell later', sub: 'A sought-after area and layout', icon: 'M4 17l6-6 4 4 6-6M14 9h6v6', show: function (m) { return m !== 'live'; } },
-    { id: 't-commute-space', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Shorter commute', { commute: 3 }], ['More space', { space: 3 }]], show: function (m) { return m !== 'invest'; } },
-    { id: 't-price-new', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }], ['Newer building', { building: 3 }]], show: function () { return true; } },
-    { id: 't-quiet-connected', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['A quiet lane', { safety: 2, parks: 1 }], ['Close to shops and metro', { shops: 2, transit: 2 }]], show: function (m) { return m !== 'invest'; } },
-    { id: 't-price-rent', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }], ['Stronger rental demand', { investment: 3 }]], show: function (m) { return m !== 'live'; } }
+    { id: 'k-schools', tint: 'sky', f: { schools: 1 }, text: 'Good schools close by', sub: 'Within a short drive or walk', icon: 'M3 9l9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5', show: function (m, hh) { return m !== 'invest' && hh.indexOf('children') >= 0; } },
+    { id: 'k-parks', tint: 'teal', f: { parks: 1 }, text: 'A park or lake nearby', sub: 'For walks, kids or a dog', icon: 'M12 3l5 8H7zM12 11v10M8 21h8', show: function (m) { return m !== 'invest'; } },
+    { id: 'k-shops', tint: 'beige', f: { shops: 1 }, text: 'Shops and caf\u00e9s you can walk to', sub: 'Groceries, pharmacy, a coffee', icon: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2', show: function () { return true; } },
+    { id: 'k-safety', tint: 'navy', f: { safety: 1 }, text: 'Streets that feel safe at night', sub: 'Well lit, settled, walkable', icon: 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z', show: function () { return true; } },
+    { id: 'k-health', tint: 'sky', f: { health: 1 }, text: 'A hospital within easy reach', sub: 'About 2 km or less', icon: 'M12 6v12M6 12h12', show: function (m) { return m !== 'invest'; } },
+    { id: 'k-transit', tint: 'teal', f: { transit: 1 }, text: 'A metro station nearby', sub: 'Good for everyone at home, and for resale', icon: 'M7 3h10v13H7zM7 11h10M9 20l-2 2M15 20l2 2', show: function () { return true; } },
+    { id: 'k-community', tint: 'beige', f: { community: 1 }, text: 'A gated society with a clubhouse', sub: 'Pool, gym, play areas, security', icon: 'M4 21V9l8-5 8 5v12M9 21v-6h6v6', show: function () { return true; } },
+    { id: 'k-rent', tint: 'sky', f: { investment: 1 }, text: 'Strong rental demand', sub: 'Easy to find tenants', icon: 'M4 12l8-7 8 7M9 20v-6h6v6', show: function (m) { return m !== 'live'; } },
+    { id: 'k-resale', tint: 'teal', f: { investment: 1, transit: 0.5 }, text: 'Easy to resell later', sub: 'A sought-after area and layout', icon: 'M4 17l6-6 4 4 6-6M14 9h6v6', show: function (m) { return m !== 'live'; } },
+    { id: 't-commute-space', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Shorter commute', { commute: 3 }, 'M5 17h14M7 17l1.5-5h7L17 17M8 20v-3M16 20v-3M9 12V9h6v3'], ['More space', { space: 3 }, 'M4 4h16v16H4zM4 12h8V4M12 16h8']], show: function (m) { return m !== 'invest'; } },
+    { id: 't-price-new', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }, 'M7 5h10M7 9h10M11 5c3 0 5 2 5 4s-2 4-5 4H8l7 7'], ['Newer building', { building: 3 }, 'M6 21V5l6-2 6 2v16M10 8h4M10 12h4M10 16h4']], show: function () { return true; } },
+    { id: 't-quiet-connected', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['A quiet lane', { safety: 2, parks: 1 }, 'M12 3l5 8H7zM12 11v10M4 21h16'], ['Close to shops and metro', { shops: 2, transit: 2 }, 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2']], show: function (m) { return m !== 'invest'; } },
+    { id: 't-price-rent', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }, 'M7 5h10M7 9h10M11 5c3 0 5 2 5 4s-2 4-5 4H8l7 7'], ['Stronger rental demand', { investment: 3 }, 'M4 12l8-7 8 7M9 20v-6h6v6']], show: function (m) { return m !== 'live'; } }
   ];
   var HOUSEHOLD = [['partner', 'Partner'], ['children', 'Children'], ['parents', 'Parents'], ['pets', 'Pets'], ['solo', 'Just me']];
 
@@ -332,27 +332,31 @@
     }
     // One continuous deck: every remaining card is in the stack; swiping never reloads the page.
     var deck = cards.slice(i).filter(function (x) { return x.type !== 'chips'; });
-    return '<div class="deck-screen"><div class="deck-top">' +
-      '<button type="button" class="deck-icon" data-action="card-back" aria-label="Undo last swipe"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>' +
-      '<div class="deck-progress" aria-hidden="true"><span id="deck-bar"></span></div><span class="deck-count" id="deck-count" aria-live="polite"></span></div>' +
-      '<div class="deck" id="deck">' + deck.map(deckCard).join('') + '</div>' +
-      '<p class="swipe-help muted center" id="deck-help"></p><div class="deck-buttons" id="deck-buttons"></div></div>';
+    var coach = S.deckCoach ? '' : '<div class="coach" id="coach" role="dialog" aria-modal="true" aria-labelledby="coach-h"><div class="coach-in">' +
+      '<h2 id="coach-h">Swipe to show what matters</h2><p>Every swipe tunes which homes rise to the top. You can change anything later.</p>' +
+      '<div class="coach-demo" aria-hidden="true"><span class="coach-side">←<br>Not for me</span><span class="coach-card"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5M12 10V4a1.5 1.5 0 0 1 3 0v6M15 10V6a1.5 1.5 0 0 1 3 0v7a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L9 13"/></svg></span><span class="coach-side">→<br>Matters</span></div>' +
+      '<p class="coach-note">For trade-offs, swipe toward the one you’d pick.</p>' +
+      '<button type="button" class="coach-btn" data-action="coach-done">Got it, start swiping</button></div></div>';
+    return '<div class="deck-screen"><div class="deck-head"><button type="button" class="deck-back" data-action="deck-exit" aria-label="Back to choosing a pace">‹</button><b>What matters to you</b></div>' +
+      '<div class="deck-meta"><span>✦ Shaping your matches</span><span id="deck-count" aria-live="polite"></span></div>' +
+      '<div class="deck-progress" aria-hidden="true"><span id="deck-bar"></span></div>' +
+      '<div class="deck" id="deck">' + deck.map(deckCard).join('') + coach + '</div>' +
+      '<div class="deck-buttons" id="deck-buttons"></div></div>';
   }
-  function deckCard(c, k) {
-    var icon = function (d) { return '<span class="swipe-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg></span>'; };
+  function deckCard(c) {
+    var art = function (d, size) { return '<svg class="scene-icon" aria-hidden="true" viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>'; };
     if (c.kind === 'pair') {
       var A = c.opts[0][0], B = c.opts[1][0];
-      return '<div class="swipe-card swipe-pair" data-id="' + c.id + '" data-kind="pair" data-a="' + esc(A) + '" data-b="' + esc(B) + '" tabindex="-1" role="group" aria-label="Trade-off: ' + esc(A) + ' or ' + esc(B) + '. Swipe left for ' + esc(A) + ', right for ' + esc(B) + '.">' +
-        '<span class="stamp stamp-left" aria-hidden="true">' + esc(A) + '</span><span class="stamp stamp-right" aria-hidden="true">' + esc(B) + '</span>' +
-        '<p class="deck-kind">Trade-off · if you can’t have both</p><div class="pair-row">' +
-        '<div class="swipe-opt" data-side="0"><span class="swipe-arrow" aria-hidden="true">←</span><b>' + esc(A) + '</b></div>' +
-        '<div class="swipe-or" aria-hidden="true">or</div>' +
-        '<div class="swipe-opt" data-side="1"><span class="swipe-arrow" aria-hidden="true">→</span><b>' + esc(B) + '</b></div></div></div>';
+      return '<div class="swipe-card deck-card swipe-pair" data-id="' + c.id + '" data-kind="pair" data-a="' + esc(A) + '" data-b="' + esc(B) + '" tabindex="-1" role="group" aria-label="Trade-off: ' + esc(A) + ' or ' + esc(B) + '. Swipe left for ' + esc(A) + ', right for ' + esc(B) + '.">' +
+        '<span class="deck-tag">Trade-off</span><span class="stamp stamp-like" aria-hidden="true">' + esc(B) + '</span><span class="stamp stamp-nope" aria-hidden="true">' + esc(A) + '</span>' +
+        '<div class="pair-scene"><div class="swipe-opt scene tint-sky" data-side="0">' + art(c.opts[0][2], 72) + '<b>' + esc(A) + '</b><span class="opt-hint">← swipe left</span></div>' +
+        '<div class="swipe-opt scene tint-teal" data-side="1">' + art(c.opts[1][2], 72) + '<b>' + esc(B) + '</b><span class="opt-hint">swipe right →</span></div><span class="pair-or" aria-hidden="true">or</span></div>' +
+        '<div class="deck-caption"><b>If you can’t have both, which wins?</b></div></div>';
     }
-    return '<div class="swipe-card swipe-single" data-id="' + c.id + '" data-kind="single" tabindex="-1" role="group" aria-label="' + esc(c.text) + '. Swipe right if it matters to you, left if it doesn’t.">' +
-      '<span class="stamp stamp-left" aria-hidden="true">Not for me</span><span class="stamp stamp-right" aria-hidden="true">Matters</span>' +
-      '<p class="deck-kind">About you · does this matter?</p>' + icon(c.icon) +
-      '<b class="swipe-text">' + esc(c.text) + '</b><span class="swipe-sub">' + esc(c.sub) + '</span></div>';
+    return '<div class="swipe-card deck-card swipe-single" data-id="' + c.id + '" data-kind="single" tabindex="-1" role="group" aria-label="' + esc(c.text) + '. Swipe right if it matters to you, left if it doesn’t.">' +
+      '<span class="deck-tag">About you</span><span class="stamp stamp-like" aria-hidden="true">Matters</span><span class="stamp stamp-nope" aria-hidden="true">Not for me</span>' +
+      '<div class="scene tint-' + (c.tint || 'sky') + '">' + art(c.icon, 120) + '</div>' +
+      '<div class="deck-caption"><b>' + esc(c.text) + '</b><span>' + esc(c.sub) + '</span></div></div>';
   }
   function roundBtn(val, glyph, caption, label, cls) {
     return '<button type="button" class="round-btn' + (cls ? ' ' + cls : '') + '" data-action="card-pick" data-value="' + val + '" aria-label="' + esc(label) + '"><span class="round-glyph" aria-hidden="true">' + glyph + '</span><span class="round-cap">' + esc(caption) + '</span></button>';
@@ -364,14 +368,14 @@
     els.forEach(function (el, k) { el.setAttribute('data-pos', Math.min(k, 3)); el.style.zIndex = 50 - k; if (k === 0) el.id = 'swipe-card'; else el.removeAttribute('id'); el.setAttribute('aria-hidden', k === 0 ? 'false' : 'true'); });
     var total = visibleCards().filter(function (x) { return x.type !== 'chips'; }).length, done = total - els.length;
     var bar = document.getElementById('deck-bar'); if (bar) bar.style.width = (total ? done / total * 100 : 0) + '%';
-    var cnt = document.getElementById('deck-count'); if (cnt) cnt.textContent = Math.min(done + 1, total) + ' / ' + total;
+    var cnt = document.getElementById('deck-count'); if (cnt) cnt.textContent = Math.min(done + 1, total) + ' of ' + total;
     var top = els[0]; if (!top) return;
     var pair = top.getAttribute('data-kind') === 'pair', A = top.getAttribute('data-a'), B = top.getAttribute('data-b');
-    document.getElementById('deck-help').textContent = pair ? 'Swipe toward the one you’d pick · ↑ if both matter' : 'Swipe right if it matters, left if it doesn’t';
-    document.getElementById('deck-buttons').className = 'deck-buttons' + (pair ? ' is-pair' : '');
+    var undo = '<button type="button" class="round-btn is-undo" data-action="card-back" aria-label="Undo last swipe"' + (S.cardIdx <= 1 ? ' disabled' : '') + '><span class="round-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v6h6"/><path d="M5.5 15a7 7 0 1 0 1.6-7.3L4 10"/></svg></span><span class="round-cap">Undo</span></button>';
+    var thumb = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11H4V10zM7 10l4-7a2 2 0 0 1 3 2l-1 5h5a2 2 0 0 1 2 2.3l-1.3 7A2 2 0 0 1 16.7 21H7"/></svg>';
     document.getElementById('deck-buttons').innerHTML = pair
-      ? roundBtn('0', '←', A, 'Pick ' + A) + roundBtn('both', '↑', 'Both', 'Both matter', 'is-small') + roundBtn('skip', '?', 'Not sure', 'Not sure, skip', 'is-small') + roundBtn('1', '→', B, 'Pick ' + B, 'is-strong')
-      : roundBtn('dislike', '✕', 'Not for me', 'Doesn’t matter to me') + roundBtn('skip', '?', 'Not sure', 'Not sure, skip', 'is-small') + roundBtn('like', '♥', 'Matters', 'This matters to me', 'is-strong');
+      ? roundBtn('0', '←', A, 'Pick ' + A) + undo + roundBtn('1', '→', B, 'Pick ' + B, 'is-strong')
+      : roundBtn('dislike', '✕', 'Not for me', 'Doesn’t matter to me') + undo + roundBtn('like', thumb, 'Matters', 'This matters to me', 'is-strong');
     initSwipe();
   }
   function vQuestions() {
@@ -846,6 +850,8 @@
       commitCard(a === 'card-pick' ? val : null);
       return;
     }
+    if (a === 'coach-done') { S.deckCoach = true; persist(); var co = document.getElementById('coach'); if (co) co.parentNode.removeChild(co); var tc = document.getElementById('swipe-card'); if (tc) tc.focus(); return; }
+    if (a === 'deck-exit') { S.cardIdx = 0; persist(); go('mode'); return; }
     if (a === 'card-back') { if (S.cardIdx > 0) { S.cardIdx--; persist(); render(); } else go('mode'); return; }
     if (a === 'q-answer') { var q = questionList()[S.qIdx]; S.qAnswers[q.id] = val === 'na' ? 'na' : +val; S.weights = null; persist(); render(); return; }
     if (a === 'q-next') { S.qIdx++; persist(); if (S.qIdx >= questionList().length) go('must'); else render(); return; }
@@ -981,6 +987,7 @@
     if (ev.key === 'Escape' && UI.overlay) { UI.overlay = null; render(); return; }
     var route = (location.hash.replace(/^#\/?/, '') || '').split('/')[0];
     if (route !== 'cards' || UI.overlay || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (document.getElementById('coach')) { if (ev.key === 'Enter') { ev.preventDefault(); document.querySelector('[data-action=coach-done]').click(); } return; }
     if (document.getElementById('swipe-card')) {
       var pairCard = document.getElementById('swipe-card').getAttribute('data-kind') === 'pair';
       var map = pairCard ? { ArrowLeft: '0', ArrowRight: '1', ArrowUp: 'both', ArrowDown: 'skip' } : { ArrowLeft: 'dislike', ArrowRight: 'like', ArrowDown: 'skip' };
