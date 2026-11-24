@@ -5,5 +5,5 @@
 // When aiEndpoint is set, it is used instead of the demo.
 window.DR_CONFIG = {
   aiEndpoint: '',
-  aiMode: 'demo'
+  aiMode: 'demo', cartoKey: ''
 };

@@ -6,7 +6,16 @@ window.WORK_PLACES = {
   manyata: { name: 'Manyata Tech Park', lat: 13.0475, lng: 77.6210 },
   ecity: { name: 'Electronic City', lat: 12.8456, lng: 77.6603 },
   koramangala: { name: 'Koramangala', lat: 12.9352, lng: 77.6245 },
-  mg: { name: 'MG Road', lat: 12.9756, lng: 77.6066 }
+  mg: { name: 'MG Road', lat: 12.9756, lng: 77.6066 },
+  indiranagar: { name: 'Indiranagar', lat: 12.9784, lng: 77.6408 },
+  hsr: { name: 'HSR Layout', lat: 12.9116, lng: 77.6474 },
+  bellandur: { name: 'Bellandur (ORR)', lat: 12.9260, lng: 77.6762 },
+  marathahalli: { name: 'Marathahalli', lat: 12.9569, lng: 77.7011 },
+  hebbal: { name: 'Hebbal', lat: 13.0358, lng: 77.5970 },
+  jayanagar: { name: 'Jayanagar', lat: 12.9250, lng: 77.5938 },
+  krpuram: { name: 'KR Puram', lat: 13.0076, lng: 77.6956 },
+  hoodi: { name: 'Hoodi', lat: 12.9919, lng: 77.7155 },
+  mahadevapura: { name: 'Mahadevapura', lat: 12.9915, lng: 77.6908 }
 };
 
 window.PLACES = [

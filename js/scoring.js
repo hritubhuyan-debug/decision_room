@@ -47,9 +47,27 @@ var Scoring = (function () {
     });
     return best;
   }
-  function commuteRange(home, work) {
-    var road = km(home, work) * 1.35; // straight line → rough road distance
-    return [Math.round(road * 2.2 + 5), Math.round(road * 3.4 + 10)]; // weekday 9 am range, minutes
+  var MODES = {
+    car: { label: 'by car', a: 2.2, b: 3.4, base: [5, 10] },
+    bike: { label: 'by two-wheeler', a: 1.6, b: 2.5, base: [3, 6] },
+    metro: { label: 'by metro', a: 1.5, b: 1.9, base: [8, 14] },
+    walk: { label: 'on foot', a: 12, b: 15, base: [0, 2] }
+  };
+  var FREQ = { daily: 1, few: 0.6, weekly: 0.25 };
+  // Weekday 9 am travel-time range in minutes. An estimate, not a routing service.
+  function trip(home, place) {
+    var area = WORK_PLACES[place.area]; if (!area) return null;
+    var road = km(home, area) * 1.35, mode = place.mode || 'car', note = '';
+    if (mode === 'metro') {
+      var m1 = nearest(home, 'metro'), m2 = nearest(area, 'metro');
+      if (!m1 || !m2 || m1.d > 1.5 || m2.d > 1.5) { mode = 'car'; note = ' (no metro close by)'; }
+      else {
+        var walkMin = (m1.d + m2.d) * 12;
+        return { label: place.label, to: area.name, lo: Math.round(walkMin + road * MODES.metro.a + MODES.metro.base[0]), hi: Math.round(walkMin + road * MODES.metro.b + MODES.metro.base[1]), how: MODES.metro.label, freq: place.freq };
+      }
+    }
+    var M = MODES[mode];
+    return { label: place.label, to: area.name, lo: Math.round(road * M.a + M.base[0]), hi: Math.round(road * M.b + M.base[1]), how: M.label + note, freq: place.freq };
   }
   var TYPICAL = { 1: 600, 2: 900, 3: 1300, 4: 1800 };
   var NEAR_TYPE = { schools: 'school', health: 'hospital', parks: 'park', shops: 'shops', transit: 'metro' };
@@ -57,10 +75,12 @@ var Scoring = (function () {
   // Returns { v: 0..1 | null, l: label, d: display text, s: source }
   function factor(id, home, profile) {
     if (id === 'commute') {
-      var w = WORK_PLACES[profile.work];
-      if (!w) return { v: null, l: 'Unknown', d: 'Add a place you travel to', s: 'No travel destination set', skip: true };
-      var r = commuteRange(home, w), mid = (r[0] + r[1]) / 2;
-      return { v: clamp(1 - (mid - 25) / 50), l: 'Estimated', d: r[0] + '–' + r[1] + ' min to ' + w.name + ' at 9 am', s: 'Estimated from distance and typical weekday traffic' };
+      var trips = (profile.places || []).map(function (p) { return trip(home, p); }).filter(Boolean);
+      if (!trips.length) return { v: null, l: 'Unknown', d: 'Add the places you travel to', s: 'No important places set', skip: true };
+      var sw = 0, sv = 0;
+      trips.forEach(function (t) { var w = FREQ[t.freq] || 0.5, mid = (t.lo + t.hi) / 2; sw += w; sv += w * clamp(1 - (mid - 25) / 50); });
+      var main = trips.slice().sort(function (x, y) { return (FREQ[y.freq] || 0) - (FREQ[x.freq] || 0); })[0];
+      return { v: sv / sw, l: 'Estimated', d: main.label + ': ' + main.lo + '\u2013' + main.hi + ' min ' + main.how + (trips.length > 1 ? ' (+' + (trips.length - 1) + ' more)' : ''), s: 'Estimated from distance, travel mode and typical weekday 9 am traffic; daily trips count most', trips: trips };
     }
     if (id === 'price') {
       var ratio = home.price / profile.budget;
@@ -115,7 +135,7 @@ var Scoring = (function () {
       var r = factor(f.id, home, profile), w = weights[f.id] || 0;
       if (r.skip) w = 0;
       if (!r.skip) { facts++; if (r.v != null) factsKnown++; }
-      rows.push({ id: f.id, label: f.label, w: w, v: r.v, l: r.l, d: r.d, s: r.s });
+      rows.push({ id: f.id, label: f.label, w: w, v: r.v, l: r.l, d: r.d, s: r.s, trips: r.trips });
       if (w <= 0) return;
       sumW += w;
       if (r.v == null) unknownW += w; else known += w * r.v;
@@ -142,7 +162,7 @@ var Scoring = (function () {
     });
   }
 
-  return { evaluate: evaluate, rankAll: rankAll, ruleCosts: ruleCosts, km: km, nearest: nearest };
+  return { evaluate: evaluate, rankAll: rankAll, ruleCosts: ruleCosts, km: km, nearest: nearest, trip: trip };
 })();
 
 var Format = {

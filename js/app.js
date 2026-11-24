@@ -6,7 +6,8 @@
   // ---------- State ----------
   var STORE = 'dr-state-v1';
   var DEFAULT_STATE = {
-    ess: { city: 'Bengaluru', budget: 130, bhk: 3, motivation: 'live', timing: '3m', work: 'itpl' },
+    ess: { city: 'Bengaluru', budget: 130, bhk: 3, motivation: 'live', timing: '3m' },
+    places: [{ label: 'Office', area: 'itpl', freq: 'daily', mode: 'car' }],
     mode: null, aiEnabled: false, household: [], cardAnswers: {}, cardIdx: 0, qIdx: 0, qAnswers: {},
     weights: null, suggested: null, locks: {}, alpha: 0.5,
     must: { budget: true, bhk: true, pets: false, lift: false, parking: false, ready: false },
@@ -17,13 +18,21 @@
   var UI = { overlay: null, ai: {}, map: null, mapSel: null, undo: null, matchTimer: null, preview: '' };
 
   function load() {
-    try { var s = JSON.parse(localStorage.getItem(STORE)); if (s && s.ess) return Object.assign(clone(DEFAULT_STATE), s); } catch (e) { /* ignore */ }
+    try {
+      var s = JSON.parse(localStorage.getItem(STORE));
+      if (s && s.ess) {
+        var m = Object.assign(clone(DEFAULT_STATE), s);
+        if (!s.places) m.places = s.ess.work ? [{ label: 'Office', area: s.ess.work, freq: 'daily', mode: 'car' }] : clone(DEFAULT_STATE.places);
+        delete m.ess.work;
+        return m;
+      }
+    } catch (e) { /* ignore */ }
     return clone(DEFAULT_STATE);
   }
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* ignore */ } }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function aiOn() { return S.mode === 'quick' || S.aiEnabled; }
-  function profile() { return { budget: S.ess.budget, bhk: S.ess.bhk, work: S.ess.work, must: S.must }; }
+  function profile() { return { budget: S.ess.budget, bhk: S.ess.bhk, places: S.places || [], must: S.must }; }
 
   // ---------- Helpers ----------
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -55,19 +64,24 @@
   }
 
   // ---------- Setup content ----------
+  // Quick mode has two kinds of card:
+  //  1. "About you": ONE characteristic. Swipe right = it matters, left = it doesn't.
+  //  2. "Trade-off": TWO options that compete. Swipe toward the one you'd pick.
   var CARDS = [
-    { id: 'household', type: 'chips', q: 'Who’s moving in with you?', show: function () { return true; } },
-    { id: 'c2', q: 'Which matters more to you?', opts: [['Shorter commute', { commute: 3 }], ['More space', { space: 3 }]], show: function (m) { return m !== 'invest'; } },
-    { id: 'c3', q: 'Which matters more to you?', opts: [['Lower price', { price: 3 }], ['Newer building', { building: 3 }]], show: function () { return true; } },
-    { id: 'c4', q: 'Where would you rather live?', opts: [['A quiet lane', { safety: 2, parks: 1 }], ['Close to shops and metro', { shops: 2, transit: 2 }]], show: function (m) { return m !== 'invest'; } },
-    { id: 'c5', q: 'Which would you pick?', opts: [['Gated community with amenities', { community: 3 }], ['Lower maintenance costs', { price: 2 }]], show: function () { return true; } },
-    { id: 'c6', q: 'Which matters more to you?', opts: [['Near good schools', { schools: 3 }], ['Near your workplace', { commute: 3 }]], show: function (m, hh) { return m !== 'invest' && hh.indexOf('children') >= 0; } },
-    { id: 'c7', q: 'Your ideal Sunday?', opts: [['A park or lake walk', { parks: 3 }], ['Cafés and food', { shops: 3 }], ['Staying in', { space: 2 }]], show: function (m) { return m !== 'invest'; } },
-    { id: 'c8', q: 'Which would you pick?', opts: [['Ready to move in', { building: 1 }], ['Under construction, lower price', { price: 2, investment: 1 }]], show: function () { return true; } },
-    { id: 'c9', q: 'Which matters more to you?', opts: [['A home that rents easily', { investment: 3 }], ['One you’d love to live in', { community: 1, parks: 1, space: 1 }]], show: function (m) { return m === 'both'; } },
-    { id: 'c10', q: 'Which matters more to you?', opts: [['Steady rent now', { investment: 2, transit: 1 }], ['Stronger growth later', { investment: 2, building: 1 }]], show: function (m) { return m !== 'live'; } },
-    { id: 'c11', q: 'Which matters more to you?', opts: [['Easy to resell', { transit: 2, community: 1 }], ['Higher rental yield', { investment: 2 }]], show: function (m) { return m === 'invest'; } },
-    { id: 'c12', q: 'Which would you pick?', opts: [['An established area', { safety: 2, shops: 1 }], ['An upcoming area', { investment: 2, price: 1 }]], show: function (m) { return m === 'invest'; } }
+    { id: 'household', type: 'chips', q: 'Who\u2019s moving in with you?', show: function () { return true; } },
+    { id: 'k-schools', f: { schools: 1 }, text: 'Good schools close by', sub: 'Within a short drive or walk', icon: 'M3 9l9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5', show: function (m, hh) { return m !== 'invest' && hh.indexOf('children') >= 0; } },
+    { id: 'k-parks', f: { parks: 1 }, text: 'A park or lake nearby', sub: 'For walks, kids or a dog', icon: 'M12 3l5 8H7zM12 11v10M8 21h8', show: function (m) { return m !== 'invest'; } },
+    { id: 'k-shops', f: { shops: 1 }, text: 'Shops and caf\u00e9s you can walk to', sub: 'Groceries, pharmacy, a coffee', icon: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2', show: function () { return true; } },
+    { id: 'k-safety', f: { safety: 1 }, text: 'Streets that feel safe at night', sub: 'Well lit, settled, walkable', icon: 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z', show: function () { return true; } },
+    { id: 'k-health', f: { health: 1 }, text: 'A hospital within easy reach', sub: 'About 2 km or less', icon: 'M12 6v12M6 12h12', show: function (m) { return m !== 'invest'; } },
+    { id: 'k-transit', f: { transit: 1 }, text: 'A metro station nearby', sub: 'Good for everyone at home, and for resale', icon: 'M7 3h10v13H7zM7 11h10M9 20l-2 2M15 20l2 2', show: function () { return true; } },
+    { id: 'k-community', f: { community: 1 }, text: 'A gated society with a clubhouse', sub: 'Pool, gym, play areas, security', icon: 'M4 21V9l8-5 8 5v12M9 21v-6h6v6', show: function () { return true; } },
+    { id: 'k-rent', f: { investment: 1 }, text: 'Strong rental demand', sub: 'Easy to find tenants', icon: 'M4 12l8-7 8 7M9 20v-6h6v6', show: function (m) { return m !== 'live'; } },
+    { id: 'k-resale', f: { investment: 1, transit: 0.5 }, text: 'Easy to resell later', sub: 'A sought-after area and layout', icon: 'M4 17l6-6 4 4 6-6M14 9h6v6', show: function (m) { return m !== 'live'; } },
+    { id: 't-commute-space', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Shorter commute', { commute: 3 }], ['More space', { space: 3 }]], show: function (m) { return m !== 'invest'; } },
+    { id: 't-price-new', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }], ['Newer building', { building: 3 }]], show: function () { return true; } },
+    { id: 't-quiet-connected', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['A quiet lane', { safety: 2, parks: 1 }], ['Close to shops and metro', { shops: 2, transit: 2 }]], show: function (m) { return m !== 'invest'; } },
+    { id: 't-price-rent', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }], ['Stronger rental demand', { investment: 3 }]], show: function (m) { return m !== 'live'; } }
   ];
   var HOUSEHOLD = [['partner', 'Partner'], ['children', 'Children'], ['parents', 'Parents'], ['pets', 'Pets'], ['solo', 'Just me']];
 
@@ -76,11 +90,17 @@
   function weightsFromCards() {
     var w = baseWeights();
     visibleCards().forEach(function (c) {
-      var a = S.cardAnswers[c.id];
-      if (!c.opts || a == null || a === 'skip') return;
-      var effects = a === 'both' ? c.opts.map(function (o) { return o[1]; }) : [c.opts[a][1]];
-      var scale = a === 'both' ? 0.5 : 1;
-      effects.forEach(function (e) { Object.keys(e).forEach(function (k) { w[k] = Math.min(10, w[k] + Math.ceil(e[k] * scale)); }); });
+      var ans = S.cardAnswers[c.id];
+      if (c.f && (ans === 'like' || ans === 'dislike')) {
+        Object.keys(c.f).forEach(function (k) {
+          var d = Math.round(4 * c.f[k]);
+          w[k] = Math.max(0, Math.min(10, ans === 'like' ? Math.max(w[k] + d, 7) : w[k] - d));
+        });
+      }
+      if (c.kind === 'pair' && ans != null && ans !== 'skip') {
+        var picks = ans === 'both' ? [0, 1] : [+ans];
+        picks.forEach(function (j) { var e = c.opts[j][1]; Object.keys(e).forEach(function (k) { w[k] = Math.min(10, w[k] + (ans === 'both' ? Math.ceil(e[k] / 2) : e[k])); }); });
+      }
     });
     return w;
   }
@@ -206,6 +226,34 @@
     };
   }
 
+  // ---------- Your important places ----------
+  var PLACE_LABELS = [['Office', 'Office'], ['Partner\u2019s office', 'Partner\u2019s office'], ['School', 'School'], ['College', 'College'], ['Parents', 'Parents'], ['Other', 'Other']];
+  var FREQS = [['daily', 'Daily'], ['few', 'A few times a week'], ['weekly', 'Weekly']];
+  var MODES_UI = [['car', 'Car'], ['bike', 'Two-wheeler'], ['metro', 'Metro'], ['walk', 'Walk']];
+  function labelOf(list, v) { for (var i = 0; i < list.length; i++) if (list[i][0] === v) return list[i][1]; return v; }
+  function placesList() {
+    var rows = S.places.map(function (p, i) {
+      var a = WORK_PLACES[p.area];
+      return '<div class="place-row"><span class="place-pin" aria-hidden="true">' + (i + 1) + '</span><span class="place-text"><b>' + esc(p.label) + '</b> \u00b7 ' + esc(a ? a.name : 'Choose an area') +
+        '<br><span class="muted">' + esc(labelOf(FREQS, p.freq)) + ' \u00b7 ' + esc(labelOf(MODES_UI, p.mode)) + '</span></span>' +
+        '<button type="button" class="btn btn-small" data-action="place-edit" data-i="' + i + '">Edit</button></div>';
+    }).join('');
+    return '<div class="places">' + (rows || '<p class="muted place-empty">No places yet. Add where you travel to, and we\u2019ll estimate the commute from every home.</p>') +
+      (S.places.length < 3 ? '<button type="button" class="btn btn-ghost place-add" data-action="place-add">+ Add a place</button>' : '') + '</div>';
+  }
+  function placeEditor(o) {
+    var d = o.draft, areas = Object.keys(WORK_PLACES).sort(function (x, y) { return WORK_PLACES[x].name.localeCompare(WORK_PLACES[y].name); });
+    return '<h2>' + (o.idx == null ? 'Add a place' : 'Edit place') + '</h2>' +
+      '<div class="field"><span class="label">What is it?</span>' + chipGroup('place-label', PLACE_LABELS, d.label) + '</div>' +
+      '<div class="field"><label for="place-area">Where is it?</label><select id="place-area" data-bind="place-area"><option value="">Choose an area</option>' +
+      areas.map(function (k) { return '<option value="' + k + '"' + (d.area === k ? ' selected' : '') + '>' + esc(WORK_PLACES[k].name) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field"><span class="label">How often do you go?</span>' + chipGroup('place-freq', FREQS, d.freq) + '</div>' +
+      '<div class="field"><span class="label">How do you usually travel?</span>' + chipGroup('place-mode', MODES_UI, d.mode) + '</div>' +
+      '<p class="muted">Daily trips count most in the commute score. Times are estimates for a weekday at 9 am.</p>' +
+      '<button type="button" class="btn btn-primary btn-block" data-action="place-save">Save place</button>' +
+      (o.idx != null ? '<button type="button" class="btn btn-link" data-action="place-remove">Remove this place</button>' : '');
+  }
+
   // ---------- Layout ----------
   var MAIN = { discover: 1, home: 1, saved: 1, compare: 1, you: 1 };
   function shell(route, inner) {
@@ -259,12 +307,11 @@
 
   function vEssentials() {
     var e = S.ess;
-    var works = [['', 'Not sure yet']].concat(Object.keys(WORK_PLACES).map(function (k) { return [k, WORK_PLACES[k].name]; }));
     return '<div class="setup-col"><p class="step-label">Step 1 of 3 · The essentials</p><h1>Let’s start with the basics</h1>' +
       '<div class="field"><label for="city">City</label><select id="city" data-bind="city"><option>Bengaluru</option><option disabled>Pune (coming soon)</option><option disabled>Hyderabad (coming soon)</option></select></div>' +
       '<div class="field"><label for="budget">Budget, all-in including registration: <b id="budget-val">' + Format.price(e.budget) + '</b></label><input id="budget" type="range" min="50" max="250" step="5" value="' + e.budget + '" data-bind="budget"></div>' +
       '<div class="field"><span class="label">Tap to change</span>' + morph('bhk') + morph('motivation') + morph('timing') + '</div>' +
-      '<div class="field"><label for="work">Where will you travel to most? <span class="muted">(optional)</span></label><select id="work" data-bind="work">' + works.map(function (w) { return '<option value="' + w[0] + '"' + (e.work === w[0] ? ' selected' : '') + '>' + esc(w[1]) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field"><span class="label">Your important places <span class="muted">(up to 3, optional)</span></span>' + placesList() + '</div>' +
       '<a class="btn btn-primary btn-block" href="#/mode">Continue</a></div>';
   }
 
@@ -283,14 +330,37 @@
     if (c.type === 'chips') {
       body = '<p class="muted">Pick all that apply.</p>' + chipGroup('household', HOUSEHOLD, S.household, true) +
         '<button type="button" class="btn btn-primary btn-block" data-action="card-next">Next</button>';
+    } else if (c.kind === 'pair') {
+      var A = c.opts[0][0], B = c.opts[1][0], nx = cards[i + 1];
+      body = '<div class="swipe-area">' + (nx ? '<div class="swipe-card swipe-ghost" aria-hidden="true"></div>' : '') +
+        '<div class="swipe-card" id="swipe-card" data-kind="pair" tabindex="0" role="group" aria-label="' + esc(A) + ' or ' + esc(B) + '. Swipe left for ' + esc(A) + ', right for ' + esc(B) + '.">' +
+        '<span class="stamp stamp-left" aria-hidden="true">' + esc(A) + '</span><span class="stamp stamp-right" aria-hidden="true">' + esc(B) + '</span>' +
+        '<div class="swipe-opt" data-side="0"><span class="swipe-arrow" aria-hidden="true">\u2190</span><b>' + esc(A) + '</b></div>' +
+        '<div class="swipe-or" aria-hidden="true">or</div>' +
+        '<div class="swipe-opt" data-side="1"><b>' + esc(B) + '</b><span class="swipe-arrow" aria-hidden="true">\u2192</span></div></div></div>' +
+        '<p class="swipe-help muted center">Swipe toward the one you\u2019d pick \u00b7 arrow keys work too</p>' +
+        '<div class="swipe-buttons">' +
+        '<button type="button" class="btn" data-action="card-pick" data-value="0">\u2190 ' + esc(A) + '</button>' +
+        '<button type="button" class="btn btn-ghost" data-action="card-pick" data-value="both">Both matter</button>' +
+        '<button type="button" class="btn btn-ghost" data-action="card-pick" data-value="skip">Not sure</button>' +
+        '<button type="button" class="btn" data-action="card-pick" data-value="1">' + esc(B) + ' \u2192</button></div>';
     } else {
-      body = '<div class="tiles tiles-' + c.opts.length + '">' + c.opts.map(function (o, j) {
-        return '<button type="button" class="tile' + (S.cardAnswers[c.id] === j ? ' is-on' : '') + '" data-action="card-pick" data-value="' + j + '"><span class="tile-art" aria-hidden="true">' + (j === 0 ? 'A' : j === 1 ? 'B' : 'C') + '</span>' + esc(o[0]) + '</button>';
-      }).join('') + '</div>' +
-        '<div class="row-center"><button type="button" class="btn btn-ghost" data-action="card-pick" data-value="both">Both matter</button><button type="button" class="btn btn-ghost" data-action="card-pick" data-value="skip">Skip</button></div>';
+      var nxt = cards[i + 1];
+      body = '<div class="swipe-area">' +
+        (nxt ? '<div class="swipe-card swipe-ghost" aria-hidden="true"></div>' : '') +
+        '<div class="swipe-card swipe-single" id="swipe-card" data-kind="single" tabindex="0" role="group" aria-label="' + esc(c.text) + '. Swipe right if it matters to you, left if it doesn\u2019t.">' +
+        '<span class="stamp stamp-left" aria-hidden="true">Not for me</span><span class="stamp stamp-right" aria-hidden="true">Matters</span>' +
+        '<span class="swipe-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + c.icon + '"/></svg></span>' +
+        '<b class="swipe-text">' + esc(c.text) + '</b><span class="swipe-sub">' + esc(c.sub) + '</span>' +
+        '</div></div>' +
+        '<p class="swipe-help muted center">Swipe right if it matters, left if it doesn\u2019t \u00b7 arrow keys work too</p>' +
+        '<div class="swipe-buttons swipe-buttons-3">' +
+        '<button type="button" class="btn btn-round" data-action="card-pick" data-value="dislike" aria-label="Doesn\u2019t matter to me"><span aria-hidden="true">\u2715</span> Not for me</button>' +
+        '<button type="button" class="btn btn-ghost" data-action="card-pick" data-value="skip">Not sure</button>' +
+        '<button type="button" class="btn btn-round btn-like" data-action="card-pick" data-value="like" aria-label="This matters to me"><span aria-hidden="true">\u2665</span> Matters</button></div>';
     }
     return '<div class="setup-col"><button type="button" class="back" data-action="card-back">‹ Back</button><div class="dots" aria-label="Card ' + (i + 1) + ' of ' + cards.length + '">' + dots + '</div>' +
-      '<h1 class="card-q">' + esc(c.q) + '</h1>' + body +
+      '<p class="step-label">' + (c.type === 'chips' ? 'About you' : c.kind === 'pair' ? 'Trade-offs' : 'About you \u00b7 what matters') + '</p><h1 class="card-q">' + esc(c.q || 'Does this matter to you?') + '</h1>' + body +
       '</div>';
   }
 
@@ -299,9 +369,7 @@
     if (q.id === 'household') {
       body = '<h1>Who’s moving in with you?</h1><p class="muted">Pick all that apply. This decides which questions follow.</p>' + chipGroup('household', HOUSEHOLD, S.household, true);
     } else if (q.id === 'travel') {
-      var works = [['', 'Not sure yet']].concat(Object.keys(WORK_PLACES).map(function (k) { return [k, WORK_PLACES[k].name]; }));
-      body = '<h1>Where will you travel to most often?</h1><p class="muted">We use this to estimate your weekday commute.</p>' +
-        '<div class="field"><label for="work2">Main destination</label><select id="work2" data-bind="work">' + works.map(function (w) { return '<option value="' + w[0] + '"' + (S.ess.work === w[0] ? ' selected' : '') + '>' + esc(w[1]) + '</option>'; }).join('') + '</select></div>';
+      body = '<h1>Where do you travel to regularly?</h1><p class="muted">Add up to 3 places, like your office, a school or your parents\u2019 home. We estimate the trip from every home, and daily trips count most.</p>' + placesList();
     } else {
       var t = QUESTIONS[q.id], a = S.qAnswers[q.id];
       var steps = '';
@@ -337,7 +405,7 @@
     var rows = order.map(function (f) {
       var share = sum ? Math.round(w[f.id] / sum * 100) : 0, locked = !!S.locks[f.id];
       var mark = aiOn() && S.suggested ? '<span class="ai-mark" style="left:calc(' + S.suggested[f.id] * 10 + '% - 1px)" title="AI suggestion: ' + S.suggested[f.id] + '"></span>' : '';
-      var note = f.id === 'commute' && !S.ess.work ? '<span class="hint">Add a destination in You to use this</span>' : '';
+      var note = f.id === 'commute' && !S.places.length ? '<span class="hint">Add your important places in Essentials to use this</span>' : '';
       return '<div class="slider-row"><div class="slider-head"><label for="w-' + f.id + '">' + esc(f.label) + '</label><span class="slider-meta"><b id="wv-' + f.id + '">' + w[f.id] + '</b> · <span id="ws-' + f.id + '">' + share + '%</span></span>' +
         '<button type="button" class="lock' + (locked ? ' is-on' : '') + '" data-action="lock" data-id="' + f.id + '" aria-pressed="' + locked + '" aria-label="' + (locked ? 'Unlock ' : 'Lock ') + esc(f.label) + '">' + (locked ? 'Locked' : 'Lock') + '</button></div>' +
         '<div class="slider-wrap">' + mark + '<input type="range" id="w-' + f.id + '" min="0" max="10" step="1" value="' + w[f.id] + '" data-action="weight" data-id="' + f.id + '"' + (locked ? ' disabled' : '') + '></div>' + note + '</div>';
@@ -484,7 +552,8 @@
   }
   function tabLife(e) {
     var h = e.home, near = nearbyFor(h), key = 'neigh:' + h.id;
-    var commute = e.rows[0].v != null ? '<p><b>Commute:</b> ' + esc(e.rows[0].d) + ' ' + evChip('Estimated', e.rows[0].s) + '</p>' : '';
+    var trips = e.rows[0].trips || [];
+    var commute = trips.length ? '<h3 class="h-trips">Your trips from here</h3><ul class="near-list">' + trips.map(function (t) { return '<li><span><b>' + esc(t.label) + '</b> \u00b7 ' + esc(t.to) + '<br><span class="muted">' + esc(labelOf(FREQS, t.freq)) + '</span></span><span>' + t.lo + '\u2013' + t.hi + ' min ' + esc(t.how) + ' ' + evChip('Estimated', e.rows[0].s) + '</span></li>'; }).join('') + '</ul>' : '<p class="muted">Add your important places to see trip times from this home.</p>';
     var ai = aiOn() ? '<div class="ai-box">' + (UI.ai[key] ? aiBlock(key, function (r) { return '<p class="ai-text">' + aiBadge() + ' ' + esc(r.text) + '</p>'; }) : '<button type="button" class="btn btn-ghost" data-action="ai-neigh" data-id="' + h.id + '">' + aiBadge() + ' Summarise the neighbourhood for me</button>') + '</div>' : '';
     return commute + '<div id="mini-map" class="map map-mini"></div><ul class="near-list">' + near.map(function (n) { return '<li><span>' + esc(n.name) + '</span><span class="muted">about ' + n.km + ' km</span></li>'; }).join('') + '</ul><p class="muted">Distances are straight-line estimates.</p>' + ai;
   }
@@ -530,7 +599,7 @@
   // ---------- You ----------
   function vYou() {
     return '<div class="page"><h1>You</h1><div class="panel">' +
-      '<div class="cost-row"><span><b>Essentials</b><br><span class="muted">' + esc(S.ess.city) + ' · ' + Format.price(S.ess.budget) + ' · ' + S.ess.bhk + ' BHK · ' + esc(S.ess.work ? WORK_PLACES[S.ess.work].name : 'no destination') + '</span></span><a class="btn btn-small" href="#/essentials">Edit</a></div>' +
+      '<div class="cost-row"><span><b>Essentials</b><br><span class="muted">' + esc(S.ess.city) + ' · ' + Format.price(S.ess.budget) + ' · ' + S.ess.bhk + ' BHK · ' + (S.places.length ? S.places.length + ' important place' + (S.places.length > 1 ? 's' : '') : 'no important places') + '</span></span><a class="btn btn-small" href="#/essentials">Edit</a></div>' +
       '<div class="cost-row"><span><b>Mode</b><br><span class="muted">' + (S.mode === 'quick' ? 'Quick, with AI help' : 'Step by step') + '</span></span><button type="button" class="btn btn-small" data-action="switch-mode">Switch to ' + (S.mode === 'quick' ? 'step by step' : 'Quick') + '</button></div>' +
       (S.mode === 'step' ? '<label class="switch-row"><span><b>Enable AI mode</b><br><span class="muted">Explanations, summaries and what-ifs. Never changes your sliders on its own.</span></span><input type="checkbox" class="switch" data-action="toggle-ai"' + (S.aiEnabled ? ' checked' : '') + '></label>' : '') +
       '<div class="cost-row"><span><b>AI help</b><br><span class="muted">' + (AI.configured() ? 'Available' : AI.demo() ? 'Demo: answers are simulated from the listing facts' : 'Unavailable right now') + '</span></span></div>' +
@@ -560,6 +629,7 @@
         chipGroup('none-reason', [['Too far', 'All too far'], ['Too expensive', 'All too expensive'], ['Too small', 'All too small'], ['Not my style', 'Not my style']], o.reason || '') +
         '<button type="button" class="btn btn-primary btn-block" data-action="confirm-none">Show the next best homes</button>';
     }
+    if (o.type === 'place') inner = placeEditor(o);
     if (o.type === 'signup') {
       inner = '<h2>Keep your shortlist on every device</h2><p class="muted">Sign up with email or phone so your saved homes follow you. We never share your number or email.</p>' +
         '<div class="field"><label for="su">Email or phone</label><input id="su" autocomplete="off"></div>' +
@@ -572,15 +642,71 @@
     return '<div class="note"><b>Added to your visit notes:</b><ul>' + (u.length ? u : ['Check light, noise and the building’s condition']).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
   }
 
+  // ---------- Swipe cards (Quick mode) ----------
+  function commitCard(val) {
+    var cards = visibleCards(), c = cards[Math.min(S.cardIdx, cards.length - 1)];
+    if (val != null) S.cardAnswers[c.id] = val;
+    S.cardIdx++; S.weights = null; persist();
+    if (S.cardIdx >= visibleCards().length) go('must'); else render();
+  }
+  var flying = false;
+  function flyOut(val) {
+    var card = document.getElementById('swipe-card'); if (!card || flying) return;
+    flying = true;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var left = val === 'dislike' || val === '0', right = val === 'like' || val === '1';
+    var t = left ? 'translate(-140%, 20px) rotate(-18deg)' : right ? 'translate(140%, 20px) rotate(18deg)' : val === 'both' ? 'translateY(-120%) scale(.9)' : 'translateY(120%) scale(.9)';
+    card.style.setProperty('--left', left ? 1 : 0); card.style.setProperty('--right', right ? 1 : 0);
+    card.style.transition = reduce ? 'none' : 'transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms';
+    card.style.transform = t; card.style.opacity = '0';
+    var ghost = document.querySelector('.swipe-ghost'); if (ghost) ghost.classList.add('is-rising');
+    setTimeout(function () { flying = false; commitCard(String(val)); }, reduce ? 0 : 300);
+  }
+  function initSwipe() {
+    var card = document.getElementById('swipe-card'); if (!card) return;
+    var startX = 0, startY = 0, dx = 0, dragging = false, moved = false, THRESH = 90;
+    card.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      dragging = true; moved = false; startX = e.clientX; startY = e.clientY; dx = 0;
+      card.style.transition = 'none'; card.classList.add('is-dragging');
+      if (card.setPointerCapture) card.setPointerCapture(e.pointerId);
+    });
+    card.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      dx = e.clientX - startX; var dy = e.clientY - startY;
+      if (Math.abs(dx) > 4) moved = true;
+      card.style.transform = 'translate(' + dx + 'px,' + dy * 0.15 + 'px) rotate(' + dx / 18 + 'deg)';
+      var p = Math.min(1, Math.abs(dx) / THRESH);
+      card.style.setProperty('--left', dx < 0 ? p : 0); card.style.setProperty('--right', dx > 0 ? p : 0);
+    });
+    function end() {
+      if (!dragging) return; dragging = false; card.classList.remove('is-dragging');
+      var pair = card.getAttribute('data-kind') === 'pair';
+      if (Math.abs(dx) >= THRESH) { flyOut(dx < 0 ? (pair ? '0' : 'dislike') : (pair ? '1' : 'like')); return; }
+      card.style.transition = 'transform 280ms cubic-bezier(.2,.8,.2,1)'; card.style.transform = '';
+      card.style.setProperty('--left', 0); card.style.setProperty('--right', 0);
+    }
+    card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
+    card.addEventListener('click', function (e) {
+      if (moved) return; var opt = e.target.closest('.swipe-opt'); if (opt) flyOut(opt.getAttribute('data-side'));
+    });
+  }
+
   // ---------- Map ----------
+  // Basemap: CARTO Positron when a free key is set in config.js; otherwise OpenStreetMap tiles (no key), softened to grey in CSS.
+  function baseLayer() {
+    var k = (window.DR_CONFIG || {}).cartoKey;
+    if (k) return L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=' + encodeURIComponent(k), { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO' });
+    return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'tiles-osm', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+  }
   function destroyMaps() { if (UI.map) { UI.map.remove(); UI.map = null; } if (UI.mini) { UI.mini.remove(); UI.mini = null; } }
   function initDiscoverMap() {
     var el = $('#map'); if (!el) return;
     if (typeof L === 'undefined') { el.innerHTML = '<p class="map-fallback">The map couldn’t load. The list still has everything.</p>'; return; }
     var map = L.map(el, { scrollWheelZoom: false }).setView([12.985, 77.72], 13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(map);
+    baseLayer().addTo(map);
     var w = S.weights, bounds = [];
-    if (S.ess.work) { var wp = WORK_PLACES[S.ess.work]; L.marker([wp.lat, wp.lng], { icon: L.divIcon({ className: 'pin-work', html: '<span>Work</span>', iconSize: [44, 22] }) }).addTo(map).bindTooltip(wp.name); }
+    S.places.forEach(function (pl, i) { var wp = WORK_PLACES[pl.area]; if (wp) L.marker([wp.lat, wp.lng], { icon: L.divIcon({ className: 'pin-work', html: '<span>' + esc(pl.label) + '</span>', iconSize: [96, 22] }) }).addTo(map).bindTooltip(wp.name); });
     var typeW = { school: 'schools', hospital: 'health', park: 'parks', metro: 'transit', shops: 'shops' };
     PLACES.forEach(function (p) { if ((w[typeW[p.type]] || 0) >= 4) L.circleMarker([p.lat, p.lng], { radius: 5, color: '#567C8D', weight: 1, fillOpacity: 0.6 }).addTo(map).bindTooltip(p.name); });
     document.querySelectorAll('.list-pane .card').forEach(function (c, i) {
@@ -597,7 +723,7 @@
     var el = $('#mini-map'); if (!el || typeof L === 'undefined') { if (el) el.hidden = true; return; }
     var h = homeById(location.hash.split('/')[2]);
     var map = L.map(el, { scrollWheelZoom: false, zoomControl: false }).setView([h.lat, h.lng], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }).addTo(map);
+    baseLayer().addTo(map);
     L.marker([h.lat, h.lng], { icon: L.divIcon({ className: 'pin-home is-sel', html: '<span>⌂</span>', iconSize: [28, 28] }) }).addTo(map);
     nearbyFor(h).forEach(function (n) { var p = PLACES.filter(function (x) { return x.name === n.name; })[0]; if (p) L.circleMarker([p.lat, p.lng], { radius: 5, color: '#567C8D', weight: 1, fillOpacity: 0.6 }).addTo(map).bindTooltip(p.name); });
     UI.mini = map;
@@ -649,6 +775,7 @@
     $('#app').innerHTML = shell(route, html) + overlay();
     document.title = 'Decision Room · ' + (route.charAt(0).toUpperCase() + route.slice(1));
     if (route === 'discover') { initDiscoverMap(); initCarousel(); }
+    if (route === 'cards') initSwipe();
     if (route === 'home' && S.tab === 'life') initMiniMap();
     persist();
   }
@@ -693,14 +820,15 @@
       else if (name === 'motivation') { S.ess.motivation = val; S.weights = null; }
       else if (name === 'timing') S.ess.timing = val;
       else if (name === 'walk-reason' || name === 'none-reason') UI.overlay.reason = UI.overlay.reason === val ? '' : val;
+      else if (name === 'place-label') UI.overlay.draft.label = val;
+      else if (name === 'place-freq') UI.overlay.draft.freq = val;
+      else if (name === 'place-mode') UI.overlay.draft.mode = val;
       persist(); render(); return;
     }
     if (a === 'pick-mode') { S.mode = val; S.weights = null; S.cardIdx = 0; S.qIdx = 0; persist(); go(val === 'quick' ? 'cards' : 'questions'); return; }
     if (a === 'card-pick' || a === 'card-next') {
-      var cards = visibleCards(), c = cards[Math.min(S.cardIdx, cards.length - 1)];
-      if (a === 'card-pick') S.cardAnswers[c.id] = val === 'both' || val === 'skip' ? val : +val;
-      S.cardIdx++; S.weights = null; persist();
-      if (S.cardIdx >= visibleCards().length) go('must'); else render();
+      if (a === 'card-pick' && document.getElementById('swipe-card')) { flyOut(val); return; }
+      commitCard(a === 'card-pick' ? val : null);
       return;
     }
     if (a === 'card-back') { if (S.cardIdx > 0) { S.cardIdx--; persist(); render(); } else go('mode'); return; }
@@ -723,6 +851,14 @@
       setTimeout(function () { UI.morph = null; render(); var p = document.querySelector('[data-morph="' + t.getAttribute('data-name') + '"] .morph-pill'); if (p) p.focus(); }, 190);
       return;
     }
+    if (a === 'place-add') { var used = S.places.map(function (p) { return p.label; }); var free = PLACE_LABELS.filter(function (l) { return used.indexOf(l[0]) < 0; })[0]; UI.overlay = { type: 'place', idx: null, draft: { label: free ? free[0] : 'Other', area: '', freq: 'daily', mode: 'car' } }; render(); return; }
+    if (a === 'place-edit') { var ix = +t.getAttribute('data-i'); UI.overlay = { type: 'place', idx: ix, draft: clone(S.places[ix]) }; render(); return; }
+    if (a === 'place-save') {
+      var dr = UI.overlay.draft; if (!dr.area) { toast('Choose where this place is first'); return; }
+      if (UI.overlay.idx == null) S.places.push(dr); else S.places[UI.overlay.idx] = dr;
+      UI.overlay = null; persist(); render(); toast('Saved. Commute now includes ' + dr.label.toLowerCase() + '.'); return;
+    }
+    if (a === 'place-remove') { S.places.splice(UI.overlay.idx, 1); UI.overlay = null; persist(); render(); toast('Place removed'); return; }
     if (a === 'filter') { slideThumb(t); S.filter = val; persist(); setTimeout(render, 220); return; }
     if (a === 'save') { save(id); return; }
     if (a === 'ev') { toast(t.getAttribute('data-l') + ': ' + t.getAttribute('data-s')); return; }
@@ -789,7 +925,7 @@
   document.addEventListener('change', function (ev) {
     var t = ev.target, a = t.getAttribute('data-action'), bind = t.getAttribute('data-bind');
     if (bind === 'budget') { S.ess.budget = +t.value; persist(); return; }
-    if (bind === 'work') { S.ess.work = t.value; persist(); render(); return; }
+    if (bind === 'place-area') { UI.overlay.draft.area = t.value; return; }
     if (bind === 'city') { S.ess.city = t.value; persist(); return; }
     if (bind === 'sort') { S.sort = t.value; persist(); render(); return; }
     if (a === 'weight') { var next = clone(S.weights); next[t.getAttribute('data-id')] = +t.value; var msg = previewText(next); setWeights(next, msg); return; }
@@ -830,6 +966,12 @@
     if (ev.key === 'Escape' && UI.overlay) { UI.overlay = null; render(); return; }
     var route = (location.hash.replace(/^#\/?/, '') || '').split('/')[0];
     if (route !== 'cards' || UI.overlay || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (document.getElementById('swipe-card')) {
+      var pairCard = document.getElementById('swipe-card').getAttribute('data-kind') === 'pair';
+      var map = pairCard ? { ArrowLeft: '0', ArrowRight: '1', ArrowUp: 'both', ArrowDown: 'skip' } : { ArrowLeft: 'dislike', ArrowRight: 'like', ArrowDown: 'skip' };
+      if (map[ev.key]) { ev.preventDefault(); flyOut(map[ev.key]); }
+      return;
+    }
     var tiles = document.querySelectorAll('.tile'); if (!tiles.length) return;
     if (ev.key === 'ArrowLeft') { tiles[0].focus(); ev.preventDefault(); }
     if (ev.key === 'ArrowRight') { tiles[tiles.length - 1].focus(); ev.preventDefault(); }
