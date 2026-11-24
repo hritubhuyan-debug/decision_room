@@ -1,30 +1,30 @@
-/* Design tokens: built from the moodboard (navy / teal / sky blue / beige / white,
-   Helvetica Neue, soft white dashboard cards). The ONLY place colours, type and spacing live. */
+/* Design tokens, from the UI references: warm off-white page, white cards, near-black ink and
+   selected states, soft wide shadows, frosted glass, one warm accent. No blue. The ONLY place colours live. */
 :root {
   /* Palette (moodboard) */
-  --navy: #2F4156;
-  --teal: #567C8D;        /* large text, fills, white-on-teal (4.5:1) */
-  --teal-ink: #4A6B7A;    /* small teal text on white or beige (5:1+) */
-  --sky: #C8D9E6;
-  --sky-tint: #EAF1F7;
-  --beige: #F5EFEB;
+  --navy: #161616;          /* ink: text, selected pills, primary buttons */
+  --teal: #2B2A28;          /* secondary dark fill */
+  --teal-ink: #4A4744;      /* secondary text accents (8:1 on white) */
+  --sky: #E4E0DA;           /* neutral chip / selected-soft */
+  --sky-tint: #F4F2EF;      /* inner surfaces */
+  --beige: #ECE9E4;         /* page */
   --white: #FFFFFF;
 
   /* Roles */
   --c-bg: var(--beige);
   --c-surface: var(--white);
-  --c-surface-2: #FAF7F5;
-  --c-border: #E6E0DB;
-  --c-border-strong: #B9C4CE;
+  --c-surface-2: #F7F5F2;
+  --c-border: rgba(22,22,22,.08);
+  --c-border-strong: rgba(22,22,22,.16);
   --c-text: var(--navy);
-  --c-text-2: #5E6B78;
+  --c-text-2: #6E6A65;
   --c-accent: var(--teal);
   --c-accent-ink: var(--teal-ink);
   --c-accent-tint: var(--sky-tint);
   --c-ink-strong: var(--navy);
-  --c-track: #E3E8ED;
-  --c-warn: #7A4A24;
-  --c-warn-tint: #F6EAE0;
+  --c-track: #E7E3DE;
+  --c-warn: #9A4A2E;
+  --c-warn-tint: #F8E6DD;
   --c-ai: var(--teal);
   --c-ai-tint: var(--sky-tint);
 
@@ -44,10 +44,21 @@
 
   /* Space, radius, shadow, motion */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
-  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 999px;
-  --shadow: 0 1px 2px rgba(47,65,86,.05), 0 8px 24px rgba(47,65,86,.07);
-  --shadow-lift: 0 2px 4px rgba(47,65,86,.06), 0 16px 40px rgba(47,65,86,.12);
+  --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-pill: 999px;
+  --shadow: 0 1px 2px rgba(22,22,22,.04), 0 10px 30px rgba(22,22,22,.07);
+  --shadow-lift: 0 2px 6px rgba(22,22,22,.06), 0 22px 50px rgba(22,22,22,.14);
   --ease: cubic-bezier(.2, .8, .2, 1);
   --dur: 320ms;
   --tap: 44px;
+
+  /* From the references */
+  --accent: #F29B38;        /* warm highlight: selected map pin, glow */
+  --accent-tint: rgba(242,155,56,.16);
+  --alert: #E07F5F;         /* alerts are a symbol in this colour */
+  --alert-tint: #FBE9E2;
+  --ok: #7FAE7B;
+  --glass: rgba(255,255,255,.72);
+  --glass-strong: rgba(255,255,255,.86);
+  --blur: saturate(1.6) blur(20px);
+  --nav-h: 64px;
 }

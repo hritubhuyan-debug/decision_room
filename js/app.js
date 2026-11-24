@@ -269,7 +269,7 @@
     var aiCtl = S.mode === 'step'
       ? '<label class="ai-switch"><input type="checkbox" data-action="toggle-ai"' + (S.aiEnabled ? ' checked' : '') + '> Enable AI mode</label>'
       : '<span class="ai-pill">AI help on</span>';
-    return '<header class="topbar"><a class="brand" href="#/discover"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#2F4156\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#C8D9E6\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></a><nav class="nav nav-top" aria-label="Main">' + links + '</nav>' + aiCtl + '</header>' +
+    return '<header class="topbar"><a class="brand" href="#/discover"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#161616\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#F29B38\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></a><nav class="nav nav-top" aria-label="Main">' + links + '</nav>' + aiCtl + '</header>' +
       '<main id="main" class="main main-' + route + '">' + inner + '</main>' +
       '<nav class="nav nav-bottom" aria-label="Main">' + links + '</nav>';
   }
@@ -277,7 +277,7 @@
   // ---------- Setup views ----------
   function vWelcome() {
     return '<div class="setup-col welcome">' +
-      '<div class="brand-lockup"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#2F4156\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#C8D9E6\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></div><p class="eyebrow">Bengaluru \u00b7 Early access</p>' +
+      '<div class="brand-lockup"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#161616\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#F29B38\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></div><p class="eyebrow">Bengaluru \u00b7 Early access</p>' +
       '<h1>Find a home that fits your life, and see what we know for sure</h1>' +
       marquee() +
       '<a class="btn btn-primary btn-block" href="#/essentials">Start</a>' +
@@ -457,18 +457,32 @@
   }
 
   // ---------- Discover ----------
+  // Everything worth flagging about a home, shown only behind the alert symbol.
+  function alertsOf(e) {
+    var out = [];
+    if (e.gate.status === 'near') out.push({ k: 'Near miss', t: e.gate.fails[0].text });
+    e.gate.unknown.forEach(function (u) { out.push({ k: 'Not confirmed', t: u.text.replace(': can’t confirm', '') }); });
+    e.concerns.forEach(function (c) { out.push({ k: 'Concern', t: c }); });
+    return out;
+  }
+  var ICON = {
+    heart: '<svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+    heartOn: '<svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+    alert: '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.5v.01"/></svg>',
+    sort: '<svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 4v16M4 17l3 3 3-3M17 20V4M14 7l3-3 3 3"/></svg>'
+  };
+  function alertBtn(e, cls) {
+    var n = alertsOf(e).length; if (!n) return '';
+    return '<button type="button" class="alert-btn ' + (cls || '') + '" data-action="alerts" data-id="' + e.home.id + '" aria-label="' + n + ' thing' + (n > 1 ? 's' : '') + ' to check">' + ICON.alert + '<span>' + n + '</span></button>';
+  }
+  function fitPill(e) { return '<span class="fit-pill"><b>' + (e.hi > e.lo ? e.lo + '–' + e.hi : e.lo) + '</b> fit</span>'; }
   function homeCard(e, rank) {
-    var h = e.home, saved = isSaved(h.id), hasConcern = e.concerns.length > 0;
-    var miss = e.gate.status === 'near' ? '<p class="flag flag-near">Near miss: ' + esc(e.gate.fails[0].text) + '</p>' : '';
-    return '<article class="card' + (UI.mapSel === h.id ? ' is-sel' : '') + '" id="card-' + h.id + '" data-id="' + h.id + '">' +
-      photo(h, 'photo-card') +
-      '<div class="card-body"><div class="card-top"><h3><a href="#/home/' + h.id + '">' + (rank ? rank + '. ' : '') + esc(h.name) + '</a></h3><span class="price">' + Format.price(h.price) + '</span></div>' +
-      '<p class="meta">' + h.bhk + ' BHK · ' + esc(h.area) + ' · ' + esc(h.listedBy) + '-listed · confirmed ' + Format.days(h.confirmedDays) + '</p>' +
-      scoreBlock(e) + '<div class="band-noval">' + band(e) + '</div><p class="reason">' + esc(reasonLine(e)) + '</p><p class="tradeoff">' + esc(tradeoffLine(e)) + '</p>' + miss +
-      (hasConcern && isSaved(h.id) ? '<p class="flag">⚠ ' + e.concerns.length + ' thing' + (e.concerns.length > 1 ? 's' : '') + ' to check before you visit</p>' : '') +
-      '<div class="card-foot"><span class="muted">' + e.factsKnown + ' of ' + e.facts + ' facts known</span>' +
-      '<span class="row-center"><button type="button" class="btn btn-small' + (saved ? ' is-on' : '') + '" data-action="save" data-id="' + h.id + '" aria-pressed="' + saved + '">' + (saved ? 'Saved' : 'Save') + '</button>' +
-      '<a class="card-expand" href="#/home/' + h.id + '" aria-label="Open ' + esc(h.name) + '"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg></a></span></div></div></article>';
+    var h = e.home, saved = isSaved(h.id);
+    return '<article class="card hc' + (UI.mapSel === h.id ? ' is-sel' : '') + '" id="card-' + h.id + '" data-id="' + h.id + '">' +
+      '<div class="hc-media">' + photo(h, 'photo-card') + (rank === 1 ? '<span class="hc-badge">Best fit</span>' : '') + alertBtn(e, 'hc-alert') +
+      '<button type="button" class="hc-save' + (saved ? ' is-on' : '') + '" data-action="save" data-id="' + h.id + '" aria-pressed="' + saved + '" aria-label="' + (saved ? 'Saved' : 'Save') + ' ' + esc(h.name) + '">' + (saved ? ICON.heartOn : ICON.heart) + '</button></div>' +
+      '<a class="hc-body" href="#/home/' + h.id + '"><span class="hc-row"><b class="hc-name">' + esc(h.name) + '</b>' + fitPill(e) + '</span>' +
+      '<span class="hc-meta">' + h.bhk + ' BHK · ' + esc(h.area) + '</span><span class="hc-price">' + Format.price(h.price) + '</span></a></article>';
   }
 
   function vDiscover() {
@@ -478,14 +492,16 @@
     list = list.filter(function (e) { return !(S.status[e.home.id] && S.status[e.home.id].step === 'Walk away'); });
     if (S.sort === 'price') list = list.slice().sort(function (a, b) { return a.home.price - b.home.price; });
     if (S.sort === 'commute') list = list.slice().sort(function (a, b) { var x = a.rows[0].v, y = b.rows[0].v; return (y == null ? -1 : y) - (x == null ? -1 : x); });
-    var lowEv = all.filter(function (e) { return e.gate.status !== 'out'; }).every(function (e) { return e.factsKnown / e.facts < 0.75; });
-    var banner = (pass.length + check.length) <= 2 ? '<p class="banner">Only ' + (pass.length + check.length) + ' homes fit your must-haves. <button type="button" class="btn-link" data-action="open-priorities">See what each rule costs</button></p>' :
-      lowEv ? '<p class="banner">We know less about these homes, so fit ranges are wider.</p>' : '';
-    var filters = segInline('filter', [['all', 'All · ' + (pass.length + check.length)], ['check', 'Needs checking · ' + check.length], ['near', 'Near misses · ' + near.length]], S.filter, 'Filter homes');
-    return '<div class="discover"><section class="list-pane" aria-label="Matched homes"><div class="list-head"><h1>Worth considering</h1>' +
-      filters + morph('sort', 'sort-morph') + banner + '</div>' +
-      '<div class="cards-scroll">' + (list.length ? list.map(function (e, i) { return homeCard(e, S.filter === 'all' && S.sort === 'fit' ? i + 1 : 0); }).join('') : '<p class="empty">Nothing here right now.</p>') + '</div>' +
-      '</section><section class="map-pane" aria-label="Map"><div id="map" class="map"></div></section></div>';
+    if (list.length && !list.some(function (e) { return e.home.id === UI.mapSel; })) UI.mapSel = list[0].home.id;
+    var pills = [['all', 'All', pass.length + check.length], ['check', 'To check', check.length], ['near', 'Near misses', near.length]].map(function (f) {
+      return '<button type="button" class="pill' + (S.filter === f[0] ? ' is-on' : '') + '" data-action="filter" data-value="' + f[0] + '" aria-pressed="' + (S.filter === f[0]) + '">' + f[1] + ' <span>' + f[2] + '</span></button>';
+    }).join('');
+    var sortLabel = { fit: 'Best fit', price: 'Price', commute: 'Commute' }[S.sort];
+    var bar = '<div class="dx-bar" role="toolbar" aria-label="Filter and sort">' + pills + '<button type="button" class="pill pill-sort" data-action="sort-cycle" aria-label="Sort: ' + sortLabel + '. Tap to change.">' + ICON.sort + '<span>' + sortLabel + '</span></button></div>';
+    var few = (pass.length + check.length) <= 2 ? '<button type="button" class="dx-note" data-action="open-priorities">Only ' + (pass.length + check.length) + ' homes fit your must-haves · see what each rule costs</button>' : '';
+    return '<div class="dx"><section class="dx-map" aria-label="Map"><div id="map" class="map"></div>' + bar + '</section>' +
+      '<section class="dx-list" aria-label="Matched homes"><header class="dx-head"><h1>Worth considering</h1><span class="dx-count">' + list.length + ' homes</span></header>' + bar + few +
+      '<div class="cards-scroll dx-cards">' + (list.length ? list.map(function (e, i) { return homeCard(e, S.filter === 'all' && S.sort === 'fit' ? i + 1 : 0); }).join('') : '<p class="empty">Nothing here right now.</p>') + '</div></section></div>';
   }
 
   function vNoMatch(near) {
@@ -500,7 +516,8 @@
   function vHome(id) {
     var h = homeById(id); if (!h) return '<div class="setup-col"><p>Home not found.</p><a href="#/discover">Back to Discover</a></div>';
     var e = evalOf(id), st = S.status[id], key = 'explain:' + id;
-    var concerns = e.concerns.length ? '<section class="concerns" aria-label="Concerns"><h2>Before you decide</h2><ul>' + e.concerns.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>' + ownerBlock(e) + '</section>' : '';
+    var nA = alertsOf(e).length;
+    var concerns = nA ? '<button type="button" class="alert-row" data-action="alerts" data-id="' + id + '"><span class="alert-dot" aria-hidden="true">' + ICON.alert + '</span><span>' + nA + ' thing' + (nA > 1 ? 's' : '') + ' to check before you decide</span><span aria-hidden="true">›</span></button>' : '';
     var next;
     if (aiOn()) {
       next = '<section class="next-box next-ai"><h2>' + aiBadge() + ' Suggested next step</h2>' +
@@ -512,10 +529,8 @@
     var tabs = segInline('tab', [['why', 'Why it fits'], ['know', 'What we know'], ['life', 'Life around it']], S.tab, 'Home details');
     var body = S.tab === 'know' ? tabKnow(e) : S.tab === 'life' ? tabLife(e) : tabWhy(e);
     return '<div class="detail"><div class="detail-main"><a class="back" href="#/discover">‹ Worth considering</a>' + photo(h, 'photo-hero') +
-      '<div class="detail-head"><h1>' + esc(h.name) + '</h1><p class="price-big">' + Format.price(h.price) + ' <span class="muted">all-in</span></p>' +
-      '<p class="meta">' + h.bhk + ' BHK · ' + esc(h.area) + ' · ' + esc(h.listedBy) + '-listed · confirmed ' + Format.days(h.confirmedDays) + '</p></div>' +
-      '<section class="fit-summary"><h2 class="sr">Fit with your priorities</h2>' + scoreBlock(e) + '<div class="band-noval">' + band(e, true) + '</div><p>' + esc(reasonLine(e)) + '. ' + esc(tradeoffLine(e)) + '.</p>' +
-      (e.gate.status === 'near' ? '<p class="flag flag-near">Near miss: ' + esc(e.gate.fails[0].text) + '</p>' : '') + '</section>' +
+      '<div class="detail-head"><div><h1>' + esc(h.name) + '</h1><p class="meta">' + h.bhk + ' BHK · ' + esc(h.area) + '</p></div><p class="price-big">' + Format.price(h.price) + '</p></div>' +
+      '<section class="fit-summary"><h2 class="sr">Fit with your priorities</h2>' + scoreBlock(e) + '<div class="band-noval">' + band(e, true) + '</div><p class="fit-line">' + esc(reasonLine(e)) + '</p></section>' +
       concerns + next +
       '<div class="detail-tabs">' + tabs + '</div><div class="tab-body" role="tabpanel">' + body + '</div></div>' +
       '<div class="sticky-bar"><button type="button" class="btn' + (isSaved(id) ? ' is-on' : '') + '" data-action="save" data-id="' + id + '">' + (isSaved(id) ? 'Saved' : 'Save') + '</button>' +
@@ -602,7 +617,7 @@
     var bestOf = function (cells) { return Math.max.apply(null, cells.map(function (c) { return c.v == null ? -1 : c.v; })); };
     // Desktop: table
     var head = '<tr><th scope="col" class="sticky-col">Your priorities</th>' + evs.map(function (e) { return '<th scope="col">' + photo(e.home, 'photo-thumb') + '<a href="#/home/' + e.home.id + '">' + esc(e.home.name) + '</a><div class="muted">' + Format.price(e.home.price) + '</div>' + band(e) + '</th>'; }).join('') + '</tr>';
-    var concernRow = '<tr class="concern-row"><th scope="row" class="sticky-col">Concerns</th>' + evs.map(function (e) { return '<td>' + (e.concerns.length ? e.concerns.map(function (c) { return '<p>⚠ ' + esc(c) + '</p>'; }).join('') : '<span class="muted">None found</span>') + '</td>'; }).join('') + '</tr>';
+    var concernRow = '<tr><th scope="row" class="sticky-col">To check</th>' + evs.map(function (e) { return '<td>' + (alertBtn(e) || '<span class="muted">Nothing</span>') + '</td>'; }).join('') + '</tr>';
     var rows = order.map(function (f) {
       var cells = evs.map(function (e) { return rowOf(e, f.id); }), best = bestOf(cells);
       return '<tr><th scope="row" class="sticky-col">' + esc(f.label) + ' <span class="muted">' + w[f.id] + '</span></th>' + cells.map(function (c) {
@@ -613,7 +628,7 @@
     // Phone: home strip + one block per priority
     var letters = ['A', 'B', 'C'];
     var strip = '<div class="cmp-strip cmp-n' + evs.length + '">' + evs.map(function (e, k) {
-      return '<a class="cmp-home" href="#/home/' + e.home.id + '">' + photo(e.home, 'photo-thumb') + '<span class="cmp-letter">' + letters[k] + '</span><b>' + esc(e.home.name) + '</b><span class="muted">' + Format.price(e.home.price) + '</span><span class="cmp-score">' + (e.hi > e.lo ? e.lo + '–' + e.hi : e.lo) + '<small> fit</small></span></a>';
+      return '<div class="cmp-cell"><a class="cmp-home" href="#/home/' + e.home.id + '">' + photo(e.home, 'photo-thumb') + '<span class="cmp-letter">' + letters[k] + '</span><b>' + esc(e.home.name) + '</b><span class="muted">' + Format.price(e.home.price) + '</span><span class="cmp-score">' + (e.hi > e.lo ? e.lo + '–' + e.hi : e.lo) + '<small> fit</small></span></a>' + alertBtn(e, 'cmp-alert') + '</div>';
     }).join('') + '</div>';
     var blocks = order.map(function (f) {
       var cells = evs.map(function (e) { return rowOf(e, f.id); }), best = bestOf(cells);
@@ -622,9 +637,7 @@
         return '<div class="cmp-line' + (isBest ? ' is-best' : '') + '"><span class="cmp-letter">' + letters[k] + '</span><span class="cmp-val">' + esc(c.d || '—') + '</span>' + (isBest ? '<span class="cmp-best">Best</span>' : evChip(c.l, c.s)) + '</div>';
       }).join('') + '</section>';
     }).join('');
-    var concerns = '<section class="cmp-block"><h3>Concerns</h3>' + evs.map(function (e, k) {
-      return '<div class="cmp-line"><span class="cmp-letter">' + letters[k] + '</span><span class="cmp-val">' + (e.concerns.length ? e.concerns.map(esc).join('<br>') : '<span class="muted">None found</span>') + '</span></div>';
-    }).join('') + '</section>';
+    var concerns = '';
     var phone = '<div class="cmp-phone">' + strip + concerns + blocks + '</div>';
     return '<div class="page page-wide"><a class="back" href="#/saved">‹ Saved</a><h1>Compare</h1>' + (S.compareNote ? '<p class="banner">' + esc(S.compareNote) + '</p>' : '') + compareVerdict(evs) +
       table + phone +
@@ -659,6 +672,11 @@
         (o.pick === 'Walk away' ? '<p class="label">Why? (optional)</p>' + chipGroup('walk-reason', [['Too expensive', 'Too expensive'], ['Too far', 'Too far'], ['Too small', 'Too small'], ['Concern about the building', 'Concern about the building'], ['Other', 'Other']], o.reason || '') : '') +
         (o.pick === 'Visit' ? visitNotes(e) : '') + (o.pick === 'Investigate' ? '<div class="note">' + ownerBlock(e) + '</div>' : '') +
         '<button type="button" class="btn btn-primary btn-block" data-action="confirm-next"' + (o.pick ? '' : ' disabled') + '>Confirm</button>';
+    }
+    if (o.type === 'alerts') {
+      var ea = evalOf(o.id);
+      inner = '<h2>Things to check</h2><p class="muted">' + esc(ea.home.name) + '</p><ul class="alert-list">' + alertsOf(ea).map(function (x) { return '<li><span class="alert-dot" aria-hidden="true">' + ICON.alert + '</span><span><b>' + esc(x.k) + '</b><br>' + esc(x.t) + '</span></li>'; }).join('') + '</ul>' + '<div class="note">' + ownerBlock(ea) + '</div>' +
+        '<a class="btn btn-primary btn-block" href="#/home/' + ea.home.id + '" data-action="close-overlay">Open this home</a>';
     }
     if (o.type === 'none') {
       inner = '<h2>None of these?</h2><p class="muted">That’s a valid decision. Telling us why is optional and helps find better matches.</p>' +
@@ -750,9 +768,9 @@
     S.places.forEach(function (pl, i) { var wp = WORK_PLACES[pl.area]; if (wp) L.marker([wp.lat, wp.lng], { icon: L.divIcon({ className: 'pin-work', html: '<span>' + esc(pl.label) + '</span>', iconSize: [96, 22] }) }).addTo(map).bindTooltip(wp.name); });
     var typeW = { school: 'schools', hospital: 'health', park: 'parks', metro: 'transit', shops: 'shops' };
     UI.homeMarkers = {};
-    document.querySelectorAll('.list-pane .card').forEach(function (c, i) {
+    document.querySelectorAll('.dx-list .card').forEach(function (c, i) {
       var h = homeById(c.getAttribute('data-id'));
-      var m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: 'pin-home' + (UI.mapSel === h.id ? ' is-sel' : ''), html: '<span>' + (i + 1) + '</span>', iconSize: [28, 28] }) }).addTo(map);
+      var m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: 'pin-home' + (UI.mapSel === h.id ? ' is-sel' : ''), html: '<span>' + Format.price(h.price).replace(' Cr', 'Cr') + '</span>', iconSize: [72, 30], iconAnchor: [36, 15] }), riseOnHover: true }).addTo(map);
       m.bindTooltip(h.name);
       m.on('click', function () { selectHome(h.id, false); });
       UI.homeMarkers[h.id] = m;
@@ -823,17 +841,17 @@
   function showAmenities(map, h, fit) {
     if (UI.amenLayer) { map.removeLayer(UI.amenLayer); }
     var g = L.layerGroup().addTo(map), pts = [[h.lat, h.lng]];
-    L.circle([h.lat, h.lng], { radius: 1500, stroke: false, fillColor: '#8FB8D6', fillOpacity: 0.18, interactive: false }).addTo(g);
-    L.circle([h.lat, h.lng], { radius: 700, stroke: false, fillColor: '#8FB8D6', fillOpacity: 0.16, interactive: false }).addTo(g);
+    L.circle([h.lat, h.lng], { radius: 1500, stroke: false, fillColor: '#F29B38', fillOpacity: 0.18, interactive: false }).addTo(g);
+    L.circle([h.lat, h.lng], { radius: 700, stroke: false, fillColor: '#F29B38', fillOpacity: 0.16, interactive: false }).addTo(g);
     amenitiesFor(h).forEach(function (a) {
-      L.polyline([[h.lat, h.lng], [a.lat, a.lng]], { color: '#2F4156', weight: 1.5, opacity: 0.55, dashArray: '4 6', interactive: false }).addTo(g);
+      L.polyline([[h.lat, h.lng], [a.lat, a.lng]], { color: '#161616', weight: 1.5, opacity: 0.55, dashArray: '4 6', interactive: false }).addTo(g);
       L.marker([a.lat, a.lng], { icon: L.divIcon({ className: 'amen-pin', html: '<span class="amen-tile">' + a.icon + '</span><span class="amen-km">' + a.km + ' km</span>', iconSize: (window.innerWidth < 900 ? [38, 56] : [52, 70]), iconAnchor: (window.innerWidth < 900 ? [19, 19] : [26, 26]) }), keyboard: false })
         .addTo(g).bindTooltip(a.kind + ' · ' + a.name + ' · about ' + a.km + ' km', { direction: 'top', offset: [0, -24] });
       pts.push([a.lat, a.lng]);
     });
-    S.places.forEach(function (pl) { var wp = WORK_PLACES[pl.area]; if (wp) L.polyline([[h.lat, h.lng], [wp.lat, wp.lng]], { color: '#567C8D', weight: 2, opacity: 0.5, dashArray: '2 8', interactive: false }).addTo(g); });
+    S.places.forEach(function (pl) { var wp = WORK_PLACES[pl.area]; if (wp) L.polyline([[h.lat, h.lng], [wp.lat, wp.lng]], { color: '#8A857E', weight: 2, opacity: 0.5, dashArray: '2 8', interactive: false }).addTo(g); });
     UI.amenLayer = g;
-    if (fit) { var small = window.innerWidth < 900; try { map.stop(); map.fitBounds(pts, { padding: small ? [36, 36] : [70, 70], maxZoom: 15, animate: fit === true && !small }); } catch (err) { /* map was replaced mid-animation */ } }
+    if (fit) { var small = window.innerWidth < 900; try { map.stop(); map.fitBounds(pts, small ? { paddingTopLeft: [40, 140], paddingBottomRight: [40, 250], maxZoom: 15, animate: false } : { padding: [70, 70], maxZoom: 15, animate: fit === true }); } catch (err) { /* map was replaced mid-animation */ } }
   }
 
   // ---------- Render ----------
@@ -905,6 +923,9 @@
       commitCard(a === 'card-pick' ? val : null);
       return;
     }
+    if (a === 'alerts') { UI.overlay = { type: 'alerts', id: id }; render(); return; }
+    if (a === 'sort-cycle') { var order = ['fit', 'price', 'commute']; S.sort = order[(order.indexOf(S.sort) + 1) % 3]; persist(); render(); return; }
+    if (a === 'filter') { S.filter = val; persist(); render(); return; }
     if (a === 'coach-done') { S.deckCoach = true; persist(); var co = document.getElementById('coach'); if (co) co.parentNode.removeChild(co); var tc = document.getElementById('swipe-card'); if (tc) tc.focus(); return; }
     if (a === 'deck-exit') { S.cardIdx = 0; persist(); go('mode'); return; }
     if (a === 'card-back') { if (S.cardIdx > 0) { S.cardIdx--; persist(); render(); } else go('mode'); return; }
@@ -1055,7 +1076,7 @@
   });
 
   document.addEventListener('mouseover', function (ev) {
-    var c = ev.target.closest && ev.target.closest('.list-pane .card');
+    var c = ev.target.closest && ev.target.closest('.dx-list .card');
     if (c && UI.map && window.matchMedia('(min-width: 900px)').matches && UI.mapSel !== c.getAttribute('data-id')) selectHome(c.getAttribute('data-id'), true);
   });
 
