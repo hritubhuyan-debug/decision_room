@@ -503,11 +503,8 @@
     var concerns = e.concerns.length ? '<section class="concerns" aria-label="Concerns"><h2>Before you decide</h2><ul>' + e.concerns.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>' + ownerBlock(e) + '</section>' : '';
     var next;
     if (aiOn()) {
-      next = '<section class="next-box"><h2>' + aiBadge() + ' Suggested next step</h2>' +
-        (UI.ai[key] ? aiBlock(key, function (r) {
-          var j = r.json || {};
-          return (j.why ? '<p class="ai-text">' + esc(j.why) + '</p>' : '<p class="ai-text">' + esc(r.text) + '</p>') + (j.tradeoff ? '<p class="ai-text muted">' + esc(j.tradeoff) + '</p>' : '') + (j.next ? '<p class="ai-next"><b>' + esc(j.next) + '</b> · ' + esc(j.reason || '') + '</p>' : '');
-        }) : '<button type="button" class="btn btn-ghost" data-action="ai-explain" data-id="' + id + '">Explain this home with AI</button>') + '</section>';
+      next = '<section class="next-box next-ai"><h2>' + aiBadge() + ' Suggested next step</h2>' +
+        (UI.ai[key] ? aiBlock(key, function (r) { var j = r.json || {}; return j.next ? '<p class="ai-next"><b>' + esc(j.next) + '</b> · ' + esc(j.reason || '') + '</p>' : '<p class="ai-text">' + esc(r.text) + '</p>'; }) : '<p class="ai-loading" role="status">' + aiBadge() + ' Thinking…</p>') + '</section>';
     } else {
       var unknowns = e.rows.filter(function (r) { return r.w > 0 && r.v == null; }).map(function (r) { return r.label; }).concat(e.gate.unknown.map(function (u) { return u.text.replace(': can’t confirm', ''); }));
       next = '<section class="next-box"><h2>Still unknown</h2>' + (unknowns.length ? '<ul class="checklist">' + unknowns.map(function (u) { return '<li><label><input type="checkbox"> ' + esc(u) + '</label></li>'; }).join('') + '</ul>' : '<p>Everything you weighted is known.</p>') + '</section>';
@@ -526,17 +523,9 @@
   }
 
   function ownerBlock(e) {
-    var id = e.home.id, key = 'owner:' + id;
-    if (!aiOn()) {
-      var qs = e.gate.unknown.map(function (u) { return 'Can you confirm: ' + u.text.replace(': can’t confirm', '').toLowerCase() + '?'; });
-      if (e.home.carpet.v == null) qs.push('What carpet area is written in the sale agreement?');
-      return qs.length ? '<h3>Questions to ask the owner</h3><ul>' + qs.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul>' : '';
-    }
-    if (!UI.ai[key]) return '<button type="button" class="btn btn-ghost" data-action="ai-owner" data-id="' + id + '">' + aiBadge() + ' Draft questions for the owner</button>';
-    return aiBlock(key, function (r) {
-      var q = r.json && r.json.questions ? r.json.questions : [r.text];
-      return '<h3>' + aiBadge() + ' Questions to ask the owner</h3><ul class="owner-q">' + q.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><button type="button" class="btn btn-small" data-action="copy-owner" data-id="' + id + '">Copy questions</button><p class="muted">Nothing is sent. Copy and send them yourself.</p>';
-    });
+    var qs = e.gate.unknown.map(function (u) { return 'Can you confirm: ' + u.text.replace(': can’t confirm', '').toLowerCase() + '?'; });
+    if (e.home.carpet.v == null) qs.push('What carpet area is written in the sale agreement?');
+    return qs.length ? '<h3>Questions to ask the owner</h3><ul>' + qs.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul>' : '';
   }
 
   function tabWhy(e) {
@@ -568,7 +557,7 @@
     var h = e.home, near = nearbyFor(h), key = 'neigh:' + h.id;
     var trips = e.rows[0].trips || [];
     var commute = trips.length ? '<h3 class="h-trips">Your trips from here</h3><ul class="near-list">' + trips.map(function (t) { return '<li><span><b>' + esc(t.label) + '</b> \u00b7 ' + esc(t.to) + '<br><span class="muted">' + esc(labelOf(FREQS, t.freq)) + '</span></span><span>' + t.lo + '\u2013' + t.hi + ' min ' + esc(t.how) + ' ' + evChip('Estimated', e.rows[0].s) + '</span></li>'; }).join('') + '</ul>' : '<p class="muted">Add your important places to see trip times from this home.</p>';
-    var ai = aiOn() ? '<div class="ai-box">' + (UI.ai[key] ? aiBlock(key, function (r) { return '<p class="ai-text">' + aiBadge() + ' ' + esc(r.text) + '</p>'; }) : '<button type="button" class="btn btn-ghost" data-action="ai-neigh" data-id="' + h.id + '">' + aiBadge() + ' Summarise the neighbourhood for me</button>') + '</div>' : '';
+    var ai = '';
     return commute + '<div id="mini-map" class="map map-mini"></div><ul class="near-list">' + near.map(function (n) { return '<li><span>' + esc(n.name) + '</span><span class="muted">about ' + n.km + ' km</span></li>'; }).join('') + '</ul><p class="muted">Distances are straight-line estimates.</p>' + ai;
   }
 
@@ -588,25 +577,58 @@
     return '<div class="page"><h1>Saved</h1>' + tabs + list + (tab === 'short' && short.length ? '<a class="btn btn-primary btn-block" href="#/compare">Compare ' + S.compare.length + ' of 3</a>' : '') + '</div>';
   }
 
+  // Best fit, worked out from the buyer's own weights. Shown on its own, in two lines at most.
+  function compareVerdict(evs) {
+    var mid = function (e) { return (e.lo + e.hi) / 2; };
+    var order = evs.slice().sort(function (x, y) { return mid(y) - mid(x); }), best = order[0], next = order[1];
+    var wins = best.rows.filter(function (r) {
+      if (!(r.w > 0) || r.v == null) return false;
+      return evs.every(function (o) { if (o === best) return true; var orow = o.rows.filter(function (x) { return x.id === r.id; })[0]; return orow.v == null || r.v > orow.v + 0.05; });
+    }).sort(function (x, y) { return y.w - x.w; }).slice(0, 2).map(function (r) { return r.label.toLowerCase(); });
+    var gap = Math.round(mid(best) - mid(next));
+    var why = wins.length ? 'Best on ' + wins.join(' and ') + ', which you weighted highly' : 'The most balanced across your priorities';
+    var close = gap <= 3 ? ' A close call with ' + next.home.name + '.' : '';
+    var check = best.concerns.length ? ' Check first: ' + best.concerns[0].charAt(0).toLowerCase() + best.concerns[0].slice(1).replace(/\.$/, '') + '.' : '';
+    return '<section class="verdict" aria-label="Best fit"><p class="verdict-k">' + (aiOn() ? aiBadge() + ' ' : '') + 'Best fit for your priorities</p>' +
+      '<p class="verdict-h">' + esc(best.home.name) + '</p><p class="verdict-why">' + esc(why + '.' + close + check) + '</p></section>';
+  }
+
   function vCompare() {
     var ids = S.compare.filter(homeById);
     if (ids.length < 2) return '<div class="page"><a class="back" href="#/saved">‹ Saved</a><h1>Compare</h1><p class="empty">Pick 2 or 3 saved homes to compare.</p><a class="btn btn-primary" href="#/saved">Go to Saved</a></div>';
     var evs = ids.map(evalOf), w = S.weights;
     var order = FACTORS.filter(function (f) { return w[f.id] > 0; }).sort(function (a, b) { return w[b.id] - w[a.id]; });
+    var rowOf = function (e, id) { for (var i = 0; i < e.rows.length; i++) if (e.rows[i].id === id) return e.rows[i]; };
+    var bestOf = function (cells) { return Math.max.apply(null, cells.map(function (c) { return c.v == null ? -1 : c.v; })); };
+    // Desktop: table
     var head = '<tr><th scope="col" class="sticky-col">Your priorities</th>' + evs.map(function (e) { return '<th scope="col">' + photo(e.home, 'photo-thumb') + '<a href="#/home/' + e.home.id + '">' + esc(e.home.name) + '</a><div class="muted">' + Format.price(e.home.price) + '</div>' + band(e) + '</th>'; }).join('') + '</tr>';
     var concernRow = '<tr class="concern-row"><th scope="row" class="sticky-col">Concerns</th>' + evs.map(function (e) { return '<td>' + (e.concerns.length ? e.concerns.map(function (c) { return '<p>⚠ ' + esc(c) + '</p>'; }).join('') : '<span class="muted">None found</span>') + '</td>'; }).join('') + '</tr>';
     var rows = order.map(function (f) {
-      var cells = evs.map(function (e) { for (var i = 0; i < e.rows.length; i++) if (e.rows[i].id === f.id) return e.rows[i]; });
-      var best = Math.max.apply(null, cells.map(function (c) { return c.v == null ? -1 : c.v; }));
+      var cells = evs.map(function (e) { return rowOf(e, f.id); }), best = bestOf(cells);
       return '<tr><th scope="row" class="sticky-col">' + esc(f.label) + ' <span class="muted">' + w[f.id] + '</span></th>' + cells.map(function (c) {
         return '<td' + (c.v != null && c.v === best && best >= 0 ? ' class="is-best"' : '') + '>' + esc(c.d || '—') + ' ' + evChip(c.l, c.s) + '</td>';
       }).join('') + '</tr>';
     }).join('');
-    var key = 'compare:' + ids.join(',');
-    var summary = aiOn() ? '<div class="ai-box">' + (UI.ai[key] ? aiBlock(key, function (r) { return '<p class="ai-text">' + aiBadge() + ' ' + esc(r.text) + '</p>'; }) : '<button type="button" class="btn btn-ghost" data-action="ai-compare">' + aiBadge() + ' Summarise this comparison</button>') + '</div>' : '';
-    return '<div class="page page-wide"><a class="back" href="#/saved">‹ Saved</a><h1>Compare</h1>' + (S.compareNote ? '<p class="banner">' + esc(S.compareNote) + '</p>' : '') + summary +
-      '<div class="table-wrap"><table class="compare"><thead>' + head + '</thead><tbody>' + concernRow + rows + '</tbody></table></div>' +
-      '<div class="row-wrap"><button type="button" class="btn" data-action="open-priorities">Adjust priorities</button>' + evs.map(function (e) { return '<button type="button" class="btn" data-action="open-next" data-id="' + e.home.id + '">Next step: ' + esc(e.home.name) + '</button>'; }).join('') +
+    var table = '<div class="table-wrap cmp-desktop"><table class="compare"><thead>' + head + '</thead><tbody>' + concernRow + rows + '</tbody></table></div>';
+    // Phone: home strip + one block per priority
+    var letters = ['A', 'B', 'C'];
+    var strip = '<div class="cmp-strip cmp-n' + evs.length + '">' + evs.map(function (e, k) {
+      return '<a class="cmp-home" href="#/home/' + e.home.id + '">' + photo(e.home, 'photo-thumb') + '<span class="cmp-letter">' + letters[k] + '</span><b>' + esc(e.home.name) + '</b><span class="muted">' + Format.price(e.home.price) + '</span><span class="cmp-score">' + (e.hi > e.lo ? e.lo + '–' + e.hi : e.lo) + '<small> fit</small></span></a>';
+    }).join('') + '</div>';
+    var blocks = order.map(function (f) {
+      var cells = evs.map(function (e) { return rowOf(e, f.id); }), best = bestOf(cells);
+      return '<section class="cmp-block"><h3>' + esc(f.label) + ' <span class="muted">weight ' + w[f.id] + '</span></h3>' + cells.map(function (c, k) {
+        var isBest = c.v != null && c.v === best && best >= 0;
+        return '<div class="cmp-line' + (isBest ? ' is-best' : '') + '"><span class="cmp-letter">' + letters[k] + '</span><span class="cmp-val">' + esc(c.d || '—') + '</span>' + (isBest ? '<span class="cmp-best">Best</span>' : evChip(c.l, c.s)) + '</div>';
+      }).join('') + '</section>';
+    }).join('');
+    var concerns = '<section class="cmp-block"><h3>Concerns</h3>' + evs.map(function (e, k) {
+      return '<div class="cmp-line"><span class="cmp-letter">' + letters[k] + '</span><span class="cmp-val">' + (e.concerns.length ? e.concerns.map(esc).join('<br>') : '<span class="muted">None found</span>') + '</span></div>';
+    }).join('') + '</section>';
+    var phone = '<div class="cmp-phone">' + strip + concerns + blocks + '</div>';
+    return '<div class="page page-wide"><a class="back" href="#/saved">‹ Saved</a><h1>Compare</h1>' + (S.compareNote ? '<p class="banner">' + esc(S.compareNote) + '</p>' : '') + compareVerdict(evs) +
+      table + phone +
+      '<div class="row-wrap cmp-actions"><button type="button" class="btn" data-action="open-priorities">Adjust priorities</button>' + evs.map(function (e) { return '<button type="button" class="btn" data-action="open-next" data-id="' + e.home.id + '">Next step: ' + esc(e.home.name) + '</button>'; }).join('') +
       '<button type="button" class="btn btn-primary" data-action="open-none">None of these</button></div></div>';
   }
 
@@ -795,6 +817,7 @@
     document.title = 'Decision Room · ' + (route.charAt(0).toUpperCase() + route.slice(1));
     if (route === 'discover') { initDiscoverMap(); initCarousel(); }
     if (route === 'cards') syncDeck();
+    if (route === 'home' && aiOn()) { var hid = location.hash.split('/')[2]; if (homeById(hid) && !UI.ai['explain:' + hid]) runAI('explain:' + hid, 'explain', { buyer: buyerPayload(), home: homePayload(evalOf(hid)) }); }
     if (route === 'home' && S.tab === 'life') initMiniMap();
     persist();
   }
