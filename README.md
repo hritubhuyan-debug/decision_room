@@ -1,17 +1,21 @@
-# Decision Room — prototype
+# Decision Room
 
 A responsive (phone + web) prototype of an AI-assisted home-buying decision tool.
 **All homes, prices and places are fictional.** Plain HTML, CSS and JavaScript: no build step.
 
-## What's real and what's AI
+## How the AI works
 
 | Part | How it works |
 | --- | --- |
-| Must-have checks, fit scores, ranking, what-if re-ranking, concern flags | Plain JavaScript (`js/scoring.js`). No AI, no tokens. Same inputs → same results. |
-| "Explain this home", neighbourhood summary, comparison summary, owner questions, typed what-ifs | Real AI (Claude Haiku) through your Cloudflare Worker. Only runs when the buyer taps a button. Results are cached in the browser. |
-| Step-by-step mode | No AI unless the buyer switches on **Enable AI mode**. |
+| Must-have checks, fit scores, ranking, what-if re-ranking, concern flags | Plain JavaScript (`js/scoring.js`). Same inputs → same results. |
+| "Explain this home", neighbourhood summary, comparison summary, owner questions, typed what-ifs | **Demo mode (default, free):** written in the browser by `js/ai-demo.js` from the same facts the real AI would get. No API calls, no cost. |
+| Same features, real AI | Set `aiEndpoint` in `js/config.js` to your Cloudflare Worker address (see section 2). The app then calls Claude instead of the demo. |
 
-If the Worker isn't set up, the app shows "AI isn't connected yet" and everything else still works.
+The welcome screen and the You page say that AI answers are simulated while demo mode is on.
+
+## Phone view on a laptop
+
+On screens 900px and wider, a **Desktop | Phone** switch sits in the bottom-left corner. **Phone** opens the real mobile layout inside a phone frame (the app runs at phone width, so the carousel, bottom tabs and sheets all behave as on a phone). You can also link straight to it: `https://<your-site>/?view=phone`.
 
 ## 1 · Put it on GitHub Pages (about 5 min)
 
@@ -21,7 +25,7 @@ If the Worker isn't set up, the app shows "AI isn't connected yet" and everythin
 
 To try it on your computer first: in this folder run `python3 -m http.server 8000` and open http://localhost:8000.
 
-## 2 · Connect the AI (about 20 min)
+## 2 · Optional: connect real AI (about 20 min, needs API credit)
 
 1. **Get an API key:** sign in to the Claude Console (console.anthropic.com) → API keys → Create key. Copy it.
 2. **Create the Worker:** sign in to Cloudflare (free plan) → **Workers & Pages → Create → Create Worker** → name it e.g. `decision-room-ai` → Deploy → **Edit code** → replace everything with the contents of `worker/worker.js` → Deploy.
@@ -35,16 +39,24 @@ To try it on your computer first: in this folder run `python3 -m http.server 800
 
 **Token and cost safeguards already built in:** AI is only called on a tap, never on page load; each request sends only one home's scores and labelled facts; replies are capped at 140–220 tokens; repeated questions are served from the browser cache; the Worker accepts only 5 fixed tasks from your site and allows about 40 calls per visitor per hour. Set a monthly spend limit in the Claude Console as well.
 
-## 3 · Replace the placeholder photos
+## 3 · Photos
 
-Each home's photo is `images/homes/<id>.svg`. To use real photos (that you have the right to use):
+Home photos are real, **free-to-use photos from Unsplash** (Unsplash License), loaded straight from `images.unsplash.com` in the visitor's browser at the right size for phone or desktop. They show real apartment buildings elsewhere in India; the homes themselves are sample data. The app credits each photographer on the home's detail page, and the welcome screen notes that listings are sample data. If a photo can't load, the app falls back to a simple drawing in `images/homes/<id>.svg`.
 
-1. Add `images/homes/<id>.jpg` (landscape, ideally 1600 × 900, under ~300 KB).
-2. In `js/data.js`, change that home's `photo` to `images/homes/<id>.jpg`.
+| Home | Photographer | Photo page |
+| --- | --- | --- |
+| Lakeside Towers | Nitish Tewari | https://unsplash.com/photos/vAfvQeXbNDg |
+| Palm Grove Residency | Jay Soni | https://unsplash.com/photos/J-43BmCLIWU |
+| Cedar Court | Dylan Mullins | https://unsplash.com/photos/0_e-H1eGf_A |
+| Banyan Heights | Abhijit M | https://unsplash.com/photos/Rcd24CwrEt4 |
+| Orchid Enclave | Badhan Ganesh | https://unsplash.com/photos/xiVfo-AF0w8 |
+| Maple Woods | Mayur Tripathi | https://unsplash.com/photos/kNzqXxlvmE4 |
+| Silver Oak Apartments | Nazish Mirekar | https://unsplash.com/photos/OQkB6k6ztPQ |
+| Greenleaf Residency | Mayur Tripathi | https://unsplash.com/photos/M-GFo7hP15c |
+| Ivy Terrace | Martin Baron | https://unsplash.com/photos/3aP961D5PPM |
+| Sunrise Meadows | Natasha Pandaran | https://unsplash.com/photos/8H8X6f5Sa9c |
 
-Photos are shown in fixed shapes (16:9 cards and hero, square thumbnails) and cropped to fill, so any landscape photo displays correctly on phone and desktop.
-
-Home ids: `lakeside, palmgrove, cedar, banyan, orchid, maple, silveroak, greenleaf, ivy, sunrise`.
+**To swap a photo:** in `js/data.js`, change that home's `img.id` to another Unsplash photo id (the part after `photo-` in its image address), or remove `img` and point `photo` at your own file in `images/homes/`.
 
 ## 4 · Design system (from the moodboard)
 

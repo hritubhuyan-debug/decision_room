@@ -1,0 +1,7 @@
+name = "decision-room-ai"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://hritubhuyan-debug.github.io,http://localhost:8000"
+MODEL = "claude-haiku-5-5"

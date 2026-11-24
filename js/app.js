@@ -1,6 +1,7 @@
-// Decision Room — prototype app (plain JS, hash routing, no build step)
+// Decision Room — app (plain JS, hash routing, no build step)
 (function () {
   'use strict';
+  if (window.DR_PREVIEW) return; // the phone-preview page only shows the frame
 
   // ---------- State ----------
   var STORE = 'dr-state-v1';
@@ -164,8 +165,15 @@
     var r = e.rows.filter(function (x) { return x.w >= 5 && x.v != null && x.v < 0.5; }).sort(function (a, b) { return b.w - a.w; })[0];
     return r ? 'Weaker on ' + r.label.toLowerCase() + ' (' + r.d + ')' : 'No big trade-off among your top priorities';
   }
+  function imgUrl(id, w) { return 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&q=70&w=' + w; }
   function photo(h, cls) {
-    return '<div class="photo ' + (cls || '') + '"><img src="' + esc(h.photo) + '" alt="Photo of ' + esc(h.name) + ' (placeholder)" loading="lazy"></div>';
+    var hero = /photo-hero/.test(cls || '');
+    if (!h.img) return '<div class="photo ' + (cls || '') + '"><img src="' + esc(h.photo) + '" alt="' + esc(h.name) + ', building exterior" loading="lazy" onload="this.classList.add(\'is-loaded\')"></div>';
+    var id = h.img.id, sizes = hero ? '(min-width: 900px) 760px, 100vw' : '(min-width: 900px) 168px, 84vw';
+    return '<div class="photo ' + (cls || '') + '"><img src="' + imgUrl(id, 1200) + '" srcset="' + imgUrl(id, 480) + ' 480w, ' + imgUrl(id, 800) + ' 800w, ' + imgUrl(id, 1200) + ' 1200w, ' + imgUrl(id, 1800) + ' 1800w" sizes="' + sizes + '"' +
+      ' alt="' + esc(h.name) + ', building exterior"' + (hero ? '' : ' loading="lazy"') + ' decoding="async" onload="this.classList.add(\'is-loaded\')"' +
+      ' onerror="this.onerror=null;this.removeAttribute(\'srcset\');this.src=\'' + esc(h.photo) + '\';if(this.nextElementSibling)this.nextElementSibling.hidden=true">' +
+      (hero ? '<a class="credit" href="' + esc(h.img.page) + '" target="_blank" rel="noopener">Photo \u00b7 ' + esc(h.img.by) + ' / Unsplash</a>' : '') + '</div>';
   }
   function aiBadge() { return '<span class="ai-badge">AI</span>'; }
   function aiBlock(key, render) {
@@ -213,7 +221,7 @@
     var aiCtl = S.mode === 'step'
       ? '<label class="ai-switch"><input type="checkbox" data-action="toggle-ai"' + (S.aiEnabled ? ' checked' : '') + '> Enable AI mode</label>'
       : '<span class="ai-pill">AI help on</span>';
-    return '<header class="topbar"><a class="brand" href="#/discover">Decision Room</a><nav class="nav nav-top" aria-label="Main">' + links + '</nav>' + aiCtl + '</header>' +
+    return '<header class="topbar"><a class="brand" href="#/discover"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#2F4156\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#C8D9E6\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></a><nav class="nav nav-top" aria-label="Main">' + links + '</nav>' + aiCtl + '</header>' +
       '<main id="main" class="main main-' + route + '">' + inner + '</main>' +
       '<nav class="nav nav-bottom" aria-label="Main">' + links + '</nav>';
   }
@@ -221,11 +229,11 @@
   // ---------- Setup views ----------
   function vWelcome() {
     return '<div class="setup-col welcome">' +
-      '<p class="eyebrow">Decision Room · prototype</p>' +
+      '<div class="brand-lockup"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#2F4156\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#C8D9E6\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></div><p class="eyebrow">Bengaluru \u00b7 Early access</p>' +
       '<h1>Find a home that fits your life, and see what we know for sure</h1>' +
       marquee() +
       '<a class="btn btn-primary btn-block" href="#/essentials">Start</a>' +
-      '<p class="muted center">No sign-up needed to browse. All homes in this prototype are fictional.</p></div>';
+      '<p class="muted center">No sign-up needed to browse.</p><p class="fineprint center">Listings are sample data and AI answers are simulated, for demonstration.</p></div>';
   }
 
   // Interaction 2 (welcome): sliding feature cards. Duplicated once for a seamless loop.
@@ -283,7 +291,7 @@
     }
     return '<div class="setup-col"><button type="button" class="back" data-action="card-back">‹ Back</button><div class="dots" aria-label="Card ' + (i + 1) + ' of ' + cards.length + '">' + dots + '</div>' +
       '<h1 class="card-q">' + esc(c.q) + '</h1>' + body +
-      '<p class="muted center">Tip: on a computer, use the arrow keys.</p></div>';
+      '</div>';
   }
 
   function vQuestions() {
@@ -525,10 +533,10 @@
       '<div class="cost-row"><span><b>Essentials</b><br><span class="muted">' + esc(S.ess.city) + ' · ' + Format.price(S.ess.budget) + ' · ' + S.ess.bhk + ' BHK · ' + esc(S.ess.work ? WORK_PLACES[S.ess.work].name : 'no destination') + '</span></span><a class="btn btn-small" href="#/essentials">Edit</a></div>' +
       '<div class="cost-row"><span><b>Mode</b><br><span class="muted">' + (S.mode === 'quick' ? 'Quick, with AI help' : 'Step by step') + '</span></span><button type="button" class="btn btn-small" data-action="switch-mode">Switch to ' + (S.mode === 'quick' ? 'step by step' : 'Quick') + '</button></div>' +
       (S.mode === 'step' ? '<label class="switch-row"><span><b>Enable AI mode</b><br><span class="muted">Explanations, summaries and what-ifs. Never changes your sliders on its own.</span></span><input type="checkbox" class="switch" data-action="toggle-ai"' + (S.aiEnabled ? ' checked' : '') + '></label>' : '') +
-      '<div class="cost-row"><span><b>AI connection</b><br><span class="muted">' + (AI.configured() ? 'Connected' : 'Not connected (add your Worker URL in js/config.js)') + '</span></span></div>' +
-      '<div class="cost-row"><span><b>Account</b><br><span class="muted">' + (S.signedIn ? 'Signed in (prototype)' : 'Guest · saved on this device') + '</span></span></div>' +
+      '<div class="cost-row"><span><b>AI help</b><br><span class="muted">' + (AI.configured() ? 'Available' : AI.demo() ? 'Demo: answers are simulated from the listing facts' : 'Unavailable right now') + '</span></span></div>' +
+      '<div class="cost-row"><span><b>Account</b><br><span class="muted">' + (S.signedIn ? 'Signed in' : 'Guest · saved on this device') + '</span></span></div>' +
       '<div class="cost-row"><span><b>Privacy</b><br><span class="muted">Your phone number is never shared. Browsing needs no sign-up.</span></span></div>' +
-      '</div><button type="button" class="btn btn-link" data-action="reset-all">Reset the prototype</button></div>';
+      '</div><button type="button" class="btn btn-link" data-action="reset-all">Clear my data on this device</button></div>';
   }
 
   // ---------- Overlays ----------
@@ -553,7 +561,7 @@
         '<button type="button" class="btn btn-primary btn-block" data-action="confirm-none">Show the next best homes</button>';
     }
     if (o.type === 'signup') {
-      inner = '<h2>Keep your shortlist on every device</h2><p class="muted">Sign up with email or phone so your saved homes follow you. Prototype only: nothing is sent.</p>' +
+      inner = '<h2>Keep your shortlist on every device</h2><p class="muted">Sign up with email or phone so your saved homes follow you. We never share your number or email.</p>' +
         '<div class="field"><label for="su">Email or phone</label><input id="su" autocomplete="off"></div>' +
         '<button type="button" class="btn btn-primary btn-block" data-action="signup-ok">Continue</button><button type="button" class="btn btn-link" data-action="signup-later">Not now, keep it on this device</button>';
     }

@@ -1,6 +1,9 @@
-// Decision Room — prototype configuration
-// After deploying the Cloudflare Worker (see worker/README.md), paste its URL here.
-// Leave empty to run without AI: the app then shows the "AI help is unavailable" state.
+// Decision Room — configuration
+// aiMode 'demo': AI answers are written in the browser from the app's own facts. Free, no API calls.
+// To use real AI (Claude via your Cloudflare Worker), set aiEndpoint to the Worker address, e.g.
+//   aiEndpoint: 'https://decision-room-ai.hrishitabhu.workers.dev'
+// When aiEndpoint is set, it is used instead of the demo.
 window.DR_CONFIG = {
-  aiEndpoint: '' // e.g. 'https://decision-room-ai.your-name.workers.dev'
+  aiEndpoint: '',
+  aiMode: 'demo'
 };

@@ -26,6 +26,9 @@ window.PLACES = [
   { type: 'shops', name: 'Whitefield high street', lat: 12.9800, lng: 77.7480 }
 ];
 
+// Photos: free under the Unsplash License, loaded from images.unsplash.com in the browser.
+// They are ILLUSTRATIVE: real buildings elsewhere in India, not the fictional homes. The .svg is the fallback.
+
 // Fact helper: v = value, l = 'Verified' | 'Estimated' | 'Unknown', s = source shown on tap
 function F(v, l, s) { return { v: v, l: l, s: s }; }
 
@@ -41,7 +44,7 @@ window.HOMES = [
     community: F(0.8, 'Estimated', 'Clubhouse and 600+ families, from listing'),
     rental: F(0.65, 'Estimated', '38 similar rentals listed nearby in 6 months'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 21 Nov'),
-    concerns: [], photo: 'images/homes/lakeside.svg'
+    concerns: [], photo: 'images/homes/lakeside.svg', img: { id: '1641579909061-4f36224c9b9d', by: 'Nitish Tewari', page: 'https://unsplash.com/photos/vAfvQeXbNDg' }
   },
   {
     id: 'palmgrove', name: 'Palm Grove Residency', area: 'Hoodi', lat: 12.9905, lng: 77.7185,
@@ -55,7 +58,7 @@ window.HOMES = [
     rental: F(0.7, 'Estimated', 'Close to ITPL; 51 similar rentals nearby'),
     rera: F('Registered · 2 complaints (2025)', 'Verified', 'K-RERA: 2 complaints about late handover, 1 resolved'),
     concerns: ['Carpet area: the listing and the K-RERA filing disagree (1,380 vs 1,190 sq ft).', 'Builder has 2 complaints on K-RERA about late handover (1 resolved).'],
-    photo: 'images/homes/palmgrove.svg'
+    photo: 'images/homes/palmgrove.svg', img: { id: '1562602136-b64ddd991ea2', by: 'Jay Soni', page: 'https://unsplash.com/photos/J-43BmCLIWU' }
   },
   {
     id: 'cedar', name: 'Cedar Court', area: 'Brookefield', lat: 12.9655, lng: 77.7175,
@@ -68,7 +71,7 @@ window.HOMES = [
     community: F(null, 'Unknown', 'No information on residents or amenities'),
     rental: F(0.55, 'Estimated', '22 similar rentals nearby'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 18 Nov'),
-    concerns: [], photo: 'images/homes/cedar.svg'
+    concerns: [], photo: 'images/homes/cedar.svg', img: { id: '1549499090-c9203d2b20ad', by: 'Dylan Mullins', page: 'https://unsplash.com/photos/0_e-H1eGf_A' }
   },
   {
     id: 'banyan', name: 'Banyan Heights', area: 'KR Puram', lat: 13.0055, lng: 77.6985,
@@ -81,7 +84,7 @@ window.HOMES = [
     community: F(0.6, 'Estimated', 'Mid-size society, from listing'),
     rental: F(0.6, 'Estimated', 'Near metro; 30 similar rentals'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 15 Nov'),
-    concerns: [], photo: 'images/homes/banyan.svg'
+    concerns: [], photo: 'images/homes/banyan.svg', img: { id: '1639335944967-03b902ead5fd', by: 'Abhijit M', page: 'https://unsplash.com/photos/Rcd24CwrEt4' }
   },
   {
     id: 'orchid', name: 'Orchid Enclave', area: 'Whitefield', lat: 12.9815, lng: 77.7420,
@@ -94,7 +97,7 @@ window.HOMES = [
     community: F(0.85, 'Estimated', 'Large gated community, from listing'),
     rental: F(0.75, 'Estimated', 'Walk to ITPL; 64 similar rentals'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 20 Nov'),
-    concerns: [], photo: 'images/homes/orchid.svg'
+    concerns: [], photo: 'images/homes/orchid.svg', img: { id: '1676641040423-90ea3633c0fc', by: 'Badhan Ganesh', page: 'https://unsplash.com/photos/xiVfo-AF0w8' }
   },
   {
     id: 'maple', name: 'Maple Woods', area: 'Kadugodi', lat: 12.9985, lng: 77.7600,
@@ -108,7 +111,7 @@ window.HOMES = [
     rental: F(0.8, 'Estimated', 'Near metro and ITPL; strong rental demand'),
     rera: F('Registered · completion Dec 2027', 'Verified', 'K-RERA filing'),
     concerns: ['Under construction: handover depends on the builder meeting the Dec 2027 K-RERA date.'],
-    photo: 'images/homes/maple.svg'
+    photo: 'images/homes/maple.svg', img: { id: '1753774050094-867f85e986fa', by: 'Mayur Tripathi', page: 'https://unsplash.com/photos/kNzqXxlvmE4' }
   },
   {
     id: 'silveroak', name: 'Silver Oak Apartments', area: 'Hoodi', lat: 12.9935, lng: 77.7240,
@@ -122,7 +125,7 @@ window.HOMES = [
     rental: F(0.6, 'Estimated', '40 similar rentals nearby'),
     rera: F('Pre-RERA project', 'Verified', 'Completed before RERA; title checks needed'),
     concerns: ['Completed before RERA: title and approvals must be checked separately.'],
-    photo: 'images/homes/silveroak.svg'
+    photo: 'images/homes/silveroak.svg', img: { id: '1579206192867-74e3c23b54ee', by: 'Nazish Mirekar', page: 'https://unsplash.com/photos/OQkB6k6ztPQ' }
   },
   {
     id: 'greenleaf', name: 'Greenleaf Residency', area: 'Varthur', lat: 12.9395, lng: 77.7480,
@@ -135,7 +138,7 @@ window.HOMES = [
     community: F(0.7, 'Estimated', 'From listing'),
     rental: F(0.45, 'Estimated', 'Fewer renters this far out'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 10 Nov'),
-    concerns: ['Availability last confirmed 12 days ago.'], photo: 'images/homes/greenleaf.svg'
+    concerns: ['Availability last confirmed 12 days ago.'], photo: 'images/homes/greenleaf.svg', img: { id: '1758792930399-72b6a7989891', by: 'Mayur Tripathi', page: 'https://unsplash.com/photos/M-GFo7hP15c' }
   },
   {
     id: 'ivy', name: 'Ivy Terrace', area: 'Whitefield', lat: 12.9880, lng: 77.7330,
@@ -148,7 +151,7 @@ window.HOMES = [
     community: F(0.75, 'Estimated', 'From listing'),
     rental: F(0.8, 'Estimated', 'Walk to ITPL; high rental demand'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 19 Nov'),
-    concerns: [], photo: 'images/homes/ivy.svg'
+    concerns: [], photo: 'images/homes/ivy.svg', img: { id: '1675667329644-c57d573f4fa0', by: 'Martin Baron', page: 'https://unsplash.com/photos/3aP961D5PPM' }
   },
   {
     id: 'sunrise', name: 'Sunrise Meadows', area: 'Marathahalli', lat: 12.9575, lng: 77.7005,
@@ -161,6 +164,6 @@ window.HOMES = [
     community: F(0.6, 'Estimated', 'From listing'),
     rental: F(0.7, 'Estimated', 'Popular rental area'),
     rera: F('Registered', 'Verified', 'K-RERA, checked 12 Nov'),
-    concerns: [], photo: 'images/homes/sunrise.svg'
+    concerns: [], photo: 'images/homes/sunrise.svg', img: { id: '1715000176706-48c0f384a20a', by: 'Natasha Pandaran', page: 'https://unsplash.com/photos/8H8X6f5Sa9c' }
   }
 ];
