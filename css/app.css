@@ -586,3 +586,23 @@ a { color: var(--c-accent-ink); }
   .cmp-actions { flex-direction: column; align-items: stretch; }
   .cmp-actions .btn { width: 100%; }
 }
+
+/* ---------- Amenities around the chosen home (map) ---------- */
+.amen-pin { background: none; border: 0; }
+.amen-tile { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: var(--white); font-size: 26px; line-height: 1; box-shadow: 0 6px 18px rgba(47,65,86,.18), 0 0 0 4px rgba(255,255,255,.55); animation: amen-pop 360ms cubic-bezier(.2,1.4,.4,1) both; }
+.amen-km { display: block; width: max-content; margin: 4px auto 0; padding: 2px 7px; border-radius: 999px; background: var(--navy); color: var(--white); font-size: 10px; font-weight: 700; }
+@keyframes amen-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.pin-home.is-sel span { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(143,184,214,.45); }
+/* Map edges fade into the page, like the reference */
+.mini-wrap { position: relative; margin: var(--s-3) 0; }
+.mini-wrap .map-mini { height: 280px; margin: 0; border-radius: 20px; -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, #000 60%, transparent 100%); mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, #000 60%, transparent 100%); }
+.mini-wrap .leaflet-control-attribution { display: none; }
+.amen-list { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: flex; flex-direction: column; }
+.amen-list li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) 0; border-bottom: 1px solid rgba(47,65,86,.08); }
+.amen-tile-sm { width: 44px; height: 44px; border-radius: 14px; font-size: 22px; flex: none; animation: none; box-shadow: 0 4px 12px rgba(47,65,86,.12); }
+.amen-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.amen-text b { font-weight: var(--fw-medium); font-size: var(--fs-sm); color: var(--navy); }
+.amen-text .muted { font-size: var(--fs-xs); }
+.amen-dist { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; color: var(--navy); }
+@media (prefers-reduced-motion: reduce) { .amen-tile { animation: none; } }
+@media (max-width: 899px) { .amen-tile { width: 38px; height: 38px; border-radius: 12px; font-size: 19px; } .amen-km { font-size: 9px; padding: 1px 5px; } }

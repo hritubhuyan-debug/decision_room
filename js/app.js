@@ -558,7 +558,7 @@
     var trips = e.rows[0].trips || [];
     var commute = trips.length ? '<h3 class="h-trips">Your trips from here</h3><ul class="near-list">' + trips.map(function (t) { return '<li><span><b>' + esc(t.label) + '</b> \u00b7 ' + esc(t.to) + '<br><span class="muted">' + esc(labelOf(FREQS, t.freq)) + '</span></span><span>' + t.lo + '\u2013' + t.hi + ' min ' + esc(t.how) + ' ' + evChip('Estimated', e.rows[0].s) + '</span></li>'; }).join('') + '</ul>' : '<p class="muted">Add your important places to see trip times from this home.</p>';
     var ai = '';
-    return commute + '<div id="mini-map" class="map map-mini"></div><ul class="near-list">' + near.map(function (n) { return '<li><span>' + esc(n.name) + '</span><span class="muted">about ' + n.km + ' km</span></li>'; }).join('') + '</ul><p class="muted">Distances are straight-line estimates.</p>' + ai;
+    return commute + '<div class="mini-wrap"><div id="mini-map" class="map map-mini"></div></div><h3 class="h-trips">What you asked for, nearby</h3><ul class="amen-list">' + amenitiesFor(h).map(function (a) { return '<li><span class="amen-tile amen-tile-sm" aria-hidden="true">' + a.icon + '</span><span class="amen-text"><b>' + esc(a.name) + '</b><span class="muted">' + esc(a.kind) + ' \u00b7 your weight ' + a.weight + '</span></span><span class="amen-dist">' + a.km + ' km</span></li>'; }).join('') + '</ul><p class="muted">Distances are straight-line estimates.</p>' + ai;
   }
 
   // ---------- Saved & Compare ----------
@@ -740,7 +740,7 @@
     if (k) return L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=' + encodeURIComponent(k), { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO' });
     return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'tiles-osm', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
   }
-  function destroyMaps() { if (UI.map) { UI.map.remove(); UI.map = null; } if (UI.mini) { UI.mini.remove(); UI.mini = null; } }
+  function destroyMaps() { UI.amenLayer = null; [UI.map, UI.mini].forEach(function (m) { if (!m) return; m.stop(); m._onZoomTransitionEnd = function () {}; /* Leaflet would otherwise finish a zoom on a map that no longer exists */ m.remove(); }); UI.map = null; UI.mini = null; }
   function initDiscoverMap() {
     var el = $('#map'); if (!el) return;
     if (typeof L === 'undefined') { el.innerHTML = '<p class="map-fallback">The map couldn’t load. The list still has everything.</p>'; return; }
@@ -749,16 +749,18 @@
     var w = S.weights, bounds = [];
     S.places.forEach(function (pl, i) { var wp = WORK_PLACES[pl.area]; if (wp) L.marker([wp.lat, wp.lng], { icon: L.divIcon({ className: 'pin-work', html: '<span>' + esc(pl.label) + '</span>', iconSize: [96, 22] }) }).addTo(map).bindTooltip(wp.name); });
     var typeW = { school: 'schools', hospital: 'health', park: 'parks', metro: 'transit', shops: 'shops' };
-    PLACES.forEach(function (p) { if ((w[typeW[p.type]] || 0) >= 4) L.circleMarker([p.lat, p.lng], { radius: 5, color: '#567C8D', weight: 1, fillOpacity: 0.6 }).addTo(map).bindTooltip(p.name); });
+    UI.homeMarkers = {};
     document.querySelectorAll('.list-pane .card').forEach(function (c, i) {
       var h = homeById(c.getAttribute('data-id'));
       var m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: 'pin-home' + (UI.mapSel === h.id ? ' is-sel' : ''), html: '<span>' + (i + 1) + '</span>', iconSize: [28, 28] }) }).addTo(map);
       m.bindTooltip(h.name);
       m.on('click', function () { selectHome(h.id, false); });
+      UI.homeMarkers[h.id] = m;
       bounds.push([h.lat, h.lng]);
     });
-    if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
     UI.map = map;
+    if (UI.mapSel && UI.homeMarkers[UI.mapSel]) showAmenities(map, homeById(UI.mapSel), 'instant');
+    else if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14, animate: false });
   }
   function initMiniMap() {
     var el = $('#mini-map'); if (!el || typeof L === 'undefined') { if (el) el.hidden = true; return; }
@@ -766,7 +768,8 @@
     var map = L.map(el, { scrollWheelZoom: false, zoomControl: false }).setView([h.lat, h.lng], 14);
     baseLayer().addTo(map);
     L.marker([h.lat, h.lng], { icon: L.divIcon({ className: 'pin-home is-sel', html: '<span>⌂</span>', iconSize: [28, 28] }) }).addTo(map);
-    nearbyFor(h).forEach(function (n) { var p = PLACES.filter(function (x) { return x.name === n.name; })[0]; if (p) L.circleMarker([p.lat, p.lng], { radius: 5, color: '#567C8D', weight: 1, fillOpacity: 0.6 }).addTo(map).bindTooltip(p.name); });
+    UI.amenLayer = null; showAmenities(map, h, false);
+    var pts = [[h.lat, h.lng]].concat(amenitiesFor(h).map(function (a) { return [a.lat, a.lng]; })); map.fitBounds(pts, { padding: [50, 50], maxZoom: 15, animate: false });
     UI.mini = map;
   }
   // Interaction 2 (phone Discover): cards leaving the left edge blur and fade, like the reference.
@@ -801,7 +804,36 @@
     UI.mapSel = id;
     document.querySelectorAll('.card.is-sel').forEach(function (c) { c.classList.remove('is-sel'); });
     var card = $('#card-' + id); if (card) { card.classList.add('is-sel'); if (!fromCard) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-    if (UI.map && fromCard) { var h = homeById(id); UI.map.panTo([h.lat, h.lng]); }
+    if (UI.map) {
+      Object.keys(UI.homeMarkers || {}).forEach(function (k) { var el = UI.homeMarkers[k].getElement(); if (el) el.classList.toggle('is-sel', k === id); });
+      showAmenities(UI.map, homeById(id), true);
+    }
+  }
+
+  // When a home is chosen, the map shows the amenities this buyer weighted, nearest first:
+  // icon tiles, a soft glow around the home and a dashed line with the distance to each.
+  var AMEN = { school: ['schools', '\ud83c\udfeb', 'School'], hospital: ['health', '\ud83c\udfe5', 'Hospital'], park: ['parks', '\ud83c\udf33', 'Park'], metro: ['transit', '\ud83d\ude87', 'Metro'], shops: ['shops', '\ud83d\uded2', 'Shops'] };
+  function amenitiesFor(h) {
+    var w = S.weights || {};
+    return Object.keys(AMEN).filter(function (t) { return (w[AMEN[t][0]] || 0) >= 3; })
+      .sort(function (a, b) { return (w[AMEN[b][0]] || 0) - (w[AMEN[a][0]] || 0); })
+      .map(function (t) { var n = Scoring.nearest(h, t); return n ? { type: t, icon: AMEN[t][1], kind: AMEN[t][2], name: n.p.name, lat: n.p.lat, lng: n.p.lng, km: Math.round(n.d * 10) / 10, weight: w[AMEN[t][0]] } : null; })
+      .filter(Boolean);
+  }
+  function showAmenities(map, h, fit) {
+    if (UI.amenLayer) { map.removeLayer(UI.amenLayer); }
+    var g = L.layerGroup().addTo(map), pts = [[h.lat, h.lng]];
+    L.circle([h.lat, h.lng], { radius: 1500, stroke: false, fillColor: '#8FB8D6', fillOpacity: 0.18, interactive: false }).addTo(g);
+    L.circle([h.lat, h.lng], { radius: 700, stroke: false, fillColor: '#8FB8D6', fillOpacity: 0.16, interactive: false }).addTo(g);
+    amenitiesFor(h).forEach(function (a) {
+      L.polyline([[h.lat, h.lng], [a.lat, a.lng]], { color: '#2F4156', weight: 1.5, opacity: 0.55, dashArray: '4 6', interactive: false }).addTo(g);
+      L.marker([a.lat, a.lng], { icon: L.divIcon({ className: 'amen-pin', html: '<span class="amen-tile">' + a.icon + '</span><span class="amen-km">' + a.km + ' km</span>', iconSize: (window.innerWidth < 900 ? [38, 56] : [52, 70]), iconAnchor: (window.innerWidth < 900 ? [19, 19] : [26, 26]) }), keyboard: false })
+        .addTo(g).bindTooltip(a.kind + ' · ' + a.name + ' · about ' + a.km + ' km', { direction: 'top', offset: [0, -24] });
+      pts.push([a.lat, a.lng]);
+    });
+    S.places.forEach(function (pl) { var wp = WORK_PLACES[pl.area]; if (wp) L.polyline([[h.lat, h.lng], [wp.lat, wp.lng]], { color: '#567C8D', weight: 2, opacity: 0.5, dashArray: '2 8', interactive: false }).addTo(g); });
+    UI.amenLayer = g;
+    if (fit) { var small = window.innerWidth < 900; try { map.stop(); map.fitBounds(pts, { padding: small ? [36, 36] : [70, 70], maxZoom: 15, animate: fit === true && !small }); } catch (err) { /* map was replaced mid-animation */ } }
   }
 
   // ---------- Render ----------
