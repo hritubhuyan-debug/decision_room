@@ -325,45 +325,55 @@
 
   function vCards() {
     var cards = visibleCards(), i = Math.min(S.cardIdx, cards.length - 1), c = cards[i];
-    var dots = cards.map(function (_, j) { return '<span class="dot' + (j <= i ? ' is-on' : '') + '"></span>'; }).join('');
-    var body;
     if (c.type === 'chips') {
-      body = '<p class="muted">Pick all that apply.</p>' + chipGroup('household', HOUSEHOLD, S.household, true) +
-        '<button type="button" class="btn btn-primary btn-block" data-action="card-next">Next</button>';
-    } else if (c.kind === 'pair') {
-      var A = c.opts[0][0], B = c.opts[1][0], nx = cards[i + 1];
-      body = '<div class="swipe-area">' + (nx ? '<div class="swipe-card swipe-ghost" aria-hidden="true"></div>' : '') +
-        '<div class="swipe-card" id="swipe-card" data-kind="pair" tabindex="0" role="group" aria-label="' + esc(A) + ' or ' + esc(B) + '. Swipe left for ' + esc(A) + ', right for ' + esc(B) + '.">' +
-        '<span class="stamp stamp-left" aria-hidden="true">' + esc(A) + '</span><span class="stamp stamp-right" aria-hidden="true">' + esc(B) + '</span>' +
-        '<div class="swipe-opt" data-side="0"><span class="swipe-arrow" aria-hidden="true">\u2190</span><b>' + esc(A) + '</b></div>' +
-        '<div class="swipe-or" aria-hidden="true">or</div>' +
-        '<div class="swipe-opt" data-side="1"><b>' + esc(B) + '</b><span class="swipe-arrow" aria-hidden="true">\u2192</span></div></div></div>' +
-        '<p class="swipe-help muted center">Swipe toward the one you\u2019d pick \u00b7 arrow keys work too</p>' +
-        '<div class="swipe-buttons">' +
-        '<button type="button" class="btn" data-action="card-pick" data-value="0">\u2190 ' + esc(A) + '</button>' +
-        '<button type="button" class="btn btn-ghost" data-action="card-pick" data-value="both">Both matter</button>' +
-        '<button type="button" class="btn btn-ghost" data-action="card-pick" data-value="skip">Not sure</button>' +
-        '<button type="button" class="btn" data-action="card-pick" data-value="1">' + esc(B) + ' \u2192</button></div>';
-    } else {
-      var nxt = cards[i + 1];
-      body = '<div class="swipe-area">' +
-        (nxt ? '<div class="swipe-card swipe-ghost" aria-hidden="true"></div>' : '') +
-        '<div class="swipe-card swipe-single" id="swipe-card" data-kind="single" tabindex="0" role="group" aria-label="' + esc(c.text) + '. Swipe right if it matters to you, left if it doesn\u2019t.">' +
-        '<span class="stamp stamp-left" aria-hidden="true">Not for me</span><span class="stamp stamp-right" aria-hidden="true">Matters</span>' +
-        '<span class="swipe-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + c.icon + '"/></svg></span>' +
-        '<b class="swipe-text">' + esc(c.text) + '</b><span class="swipe-sub">' + esc(c.sub) + '</span>' +
-        '</div></div>' +
-        '<p class="swipe-help muted center">Swipe right if it matters, left if it doesn\u2019t \u00b7 arrow keys work too</p>' +
-        '<div class="swipe-buttons swipe-buttons-3">' +
-        '<button type="button" class="btn btn-round" data-action="card-pick" data-value="dislike" aria-label="Doesn\u2019t matter to me"><span aria-hidden="true">\u2715</span> Not for me</button>' +
-        '<button type="button" class="btn btn-ghost" data-action="card-pick" data-value="skip">Not sure</button>' +
-        '<button type="button" class="btn btn-round btn-like" data-action="card-pick" data-value="like" aria-label="This matters to me"><span aria-hidden="true">\u2665</span> Matters</button></div>';
+      return '<div class="setup-col"><button type="button" class="back" data-action="card-back">‹ Back</button><p class="step-label">About you</p><h1 class="card-q">' + esc(c.q) + '</h1>' +
+        '<p class="muted">Pick all that apply. Then swipe through a short deck: right if something matters, left if it doesn’t.</p>' + chipGroup('household', HOUSEHOLD, S.household, true) +
+        '<button type="button" class="btn btn-primary btn-block" data-action="card-next">Start swiping</button></div>';
     }
-    return '<div class="setup-col"><button type="button" class="back" data-action="card-back">‹ Back</button><div class="dots" aria-label="Card ' + (i + 1) + ' of ' + cards.length + '">' + dots + '</div>' +
-      '<p class="step-label">' + (c.type === 'chips' ? 'About you' : c.kind === 'pair' ? 'Trade-offs' : 'About you \u00b7 what matters') + '</p><h1 class="card-q">' + esc(c.q || 'Does this matter to you?') + '</h1>' + body +
-      '</div>';
+    // One continuous deck: every remaining card is in the stack; swiping never reloads the page.
+    var deck = cards.slice(i).filter(function (x) { return x.type !== 'chips'; });
+    return '<div class="deck-screen"><div class="deck-top">' +
+      '<button type="button" class="deck-icon" data-action="card-back" aria-label="Undo last swipe"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>' +
+      '<div class="deck-progress" aria-hidden="true"><span id="deck-bar"></span></div><span class="deck-count" id="deck-count" aria-live="polite"></span></div>' +
+      '<div class="deck" id="deck">' + deck.map(deckCard).join('') + '</div>' +
+      '<p class="swipe-help muted center" id="deck-help"></p><div class="deck-buttons" id="deck-buttons"></div></div>';
   }
-
+  function deckCard(c, k) {
+    var icon = function (d) { return '<span class="swipe-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg></span>'; };
+    if (c.kind === 'pair') {
+      var A = c.opts[0][0], B = c.opts[1][0];
+      return '<div class="swipe-card swipe-pair" data-id="' + c.id + '" data-kind="pair" data-a="' + esc(A) + '" data-b="' + esc(B) + '" tabindex="-1" role="group" aria-label="Trade-off: ' + esc(A) + ' or ' + esc(B) + '. Swipe left for ' + esc(A) + ', right for ' + esc(B) + '.">' +
+        '<span class="stamp stamp-left" aria-hidden="true">' + esc(A) + '</span><span class="stamp stamp-right" aria-hidden="true">' + esc(B) + '</span>' +
+        '<p class="deck-kind">Trade-off · if you can’t have both</p><div class="pair-row">' +
+        '<div class="swipe-opt" data-side="0"><span class="swipe-arrow" aria-hidden="true">←</span><b>' + esc(A) + '</b></div>' +
+        '<div class="swipe-or" aria-hidden="true">or</div>' +
+        '<div class="swipe-opt" data-side="1"><span class="swipe-arrow" aria-hidden="true">→</span><b>' + esc(B) + '</b></div></div></div>';
+    }
+    return '<div class="swipe-card swipe-single" data-id="' + c.id + '" data-kind="single" tabindex="-1" role="group" aria-label="' + esc(c.text) + '. Swipe right if it matters to you, left if it doesn’t.">' +
+      '<span class="stamp stamp-left" aria-hidden="true">Not for me</span><span class="stamp stamp-right" aria-hidden="true">Matters</span>' +
+      '<p class="deck-kind">About you · does this matter?</p>' + icon(c.icon) +
+      '<b class="swipe-text">' + esc(c.text) + '</b><span class="swipe-sub">' + esc(c.sub) + '</span></div>';
+  }
+  function roundBtn(val, glyph, caption, label, cls) {
+    return '<button type="button" class="round-btn' + (cls ? ' ' + cls : '') + '" data-action="card-pick" data-value="' + val + '" aria-label="' + esc(label) + '"><span class="round-glyph" aria-hidden="true">' + glyph + '</span><span class="round-cap">' + esc(caption) + '</span></button>';
+  }
+  // Positions the stack, sets the counter and the button row for whichever card is on top.
+  function syncDeck() {
+    var deckEl = document.getElementById('deck'); if (!deckEl) return;
+    var els = deckEl.querySelectorAll('.swipe-card:not(.is-gone)');
+    els.forEach(function (el, k) { el.setAttribute('data-pos', Math.min(k, 3)); el.style.zIndex = 50 - k; if (k === 0) el.id = 'swipe-card'; else el.removeAttribute('id'); el.setAttribute('aria-hidden', k === 0 ? 'false' : 'true'); });
+    var total = visibleCards().filter(function (x) { return x.type !== 'chips'; }).length, done = total - els.length;
+    var bar = document.getElementById('deck-bar'); if (bar) bar.style.width = (total ? done / total * 100 : 0) + '%';
+    var cnt = document.getElementById('deck-count'); if (cnt) cnt.textContent = Math.min(done + 1, total) + ' / ' + total;
+    var top = els[0]; if (!top) return;
+    var pair = top.getAttribute('data-kind') === 'pair', A = top.getAttribute('data-a'), B = top.getAttribute('data-b');
+    document.getElementById('deck-help').textContent = pair ? 'Swipe toward the one you’d pick · ↑ if both matter' : 'Swipe right if it matters, left if it doesn’t';
+    document.getElementById('deck-buttons').className = 'deck-buttons' + (pair ? ' is-pair' : '');
+    document.getElementById('deck-buttons').innerHTML = pair
+      ? roundBtn('0', '←', A, 'Pick ' + A) + roundBtn('both', '↑', 'Both', 'Both matter', 'is-small') + roundBtn('skip', '?', 'Not sure', 'Not sure, skip', 'is-small') + roundBtn('1', '→', B, 'Pick ' + B, 'is-strong')
+      : roundBtn('dislike', '✕', 'Not for me', 'Doesn’t matter to me') + roundBtn('skip', '?', 'Not sure', 'Not sure, skip', 'is-small') + roundBtn('like', '♥', 'Matters', 'This matters to me', 'is-strong');
+    initSwipe();
+  }
   function vQuestions() {
     var list = questionList(), i = Math.min(S.qIdx, list.length - 1), q = list[i], body;
     if (q.id === 'household') {
@@ -647,23 +657,28 @@
     var cards = visibleCards(), c = cards[Math.min(S.cardIdx, cards.length - 1)];
     if (val != null) S.cardAnswers[c.id] = val;
     S.cardIdx++; S.weights = null; persist();
-    if (S.cardIdx >= visibleCards().length) go('must'); else render();
+    if (S.cardIdx >= visibleCards().length) go('must');
+    else if (document.getElementById('deck') && val != null) syncDeck();
+    else render();
   }
   var flying = false;
   function flyOut(val) {
-    var card = document.getElementById('swipe-card'); if (!card || flying) return;
-    flying = true;
+    var card = document.getElementById('swipe-card'); if (!card) return;
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var left = val === 'dislike' || val === '0', right = val === 'like' || val === '1';
-    var t = left ? 'translate(-140%, 20px) rotate(-18deg)' : right ? 'translate(140%, 20px) rotate(18deg)' : val === 'both' ? 'translateY(-120%) scale(.9)' : 'translateY(120%) scale(.9)';
+    var t = left ? 'translate(-150%, 30px) rotate(-22deg)' : right ? 'translate(150%, 30px) rotate(22deg)' : val === 'both' ? 'translateY(-130%) scale(.9)' : 'translateY(130%) scale(.9)';
     card.style.setProperty('--left', left ? 1 : 0); card.style.setProperty('--right', right ? 1 : 0);
-    card.style.transition = reduce ? 'none' : 'transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms';
-    card.style.transform = t; card.style.opacity = '0';
-    var ghost = document.querySelector('.swipe-ghost'); if (ghost) ghost.classList.add('is-rising');
-    setTimeout(function () { flying = false; commitCard(String(val)); }, reduce ? 0 : 300);
+    card.style.transition = reduce ? 'none' : 'transform 340ms cubic-bezier(.2,.8,.2,1), opacity 340ms';
+    card.style.transform = t; card.style.opacity = '0'; card.classList.add('is-gone'); card.removeAttribute('id');
+    // The next card rises at the same moment, so the deck never pauses.
+    var deckEl = document.getElementById('deck');
+    if (deckEl) deckEl.querySelectorAll('.swipe-card:not(.is-gone)').forEach(function (el, k) { el.setAttribute('data-pos', Math.min(k, 3)); });
+    commitCard(String(val));
+    setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, reduce ? 0 : 360);
   }
   function initSwipe() {
-    var card = document.getElementById('swipe-card'); if (!card) return;
+    var card = document.getElementById('swipe-card'); if (!card || card.getAttribute('data-bound')) return;
+    card.setAttribute('data-bound', '1');
     var startX = 0, startY = 0, dx = 0, dragging = false, moved = false, THRESH = 90;
     card.addEventListener('pointerdown', function (e) {
       if (e.button !== undefined && e.button !== 0) return;
@@ -775,7 +790,7 @@
     $('#app').innerHTML = shell(route, html) + overlay();
     document.title = 'Decision Room · ' + (route.charAt(0).toUpperCase() + route.slice(1));
     if (route === 'discover') { initDiscoverMap(); initCarousel(); }
-    if (route === 'cards') initSwipe();
+    if (route === 'cards') syncDeck();
     if (route === 'home' && S.tab === 'life') initMiniMap();
     persist();
   }
