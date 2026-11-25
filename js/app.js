@@ -72,7 +72,6 @@
     { id: 'k-schools', tint: 'sky', f: { schools: 1 }, text: 'Good schools close by', sub: 'Within a short drive or walk', icon: 'M3 9l9-5 9 5-9 5zM7 11v5c3 2 7 2 10 0v-5', show: function (m, hh) { return m !== 'invest' && hh.indexOf('children') >= 0; } },
     { id: 'k-parks', tint: 'teal', f: { parks: 1 }, text: 'A park or lake nearby', sub: 'For walks, kids or a dog', icon: 'M12 3l5 8H7zM12 11v10M8 21h8', show: function (m) { return m !== 'invest'; } },
     { id: 'k-shops', tint: 'beige', f: { shops: 1 }, text: 'Shops and caf\u00e9s you can walk to', sub: 'Groceries, pharmacy, a coffee', icon: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2', show: function () { return true; } },
-    { id: 'k-safety', tint: 'navy', f: { safety: 1 }, text: 'Streets that feel safe at night', sub: 'Well lit, settled, walkable', icon: 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z', show: function () { return true; } },
     { id: 'k-health', tint: 'sky', f: { health: 1 }, text: 'A hospital within easy reach', sub: 'About 2 km or less', icon: 'M12 6v12M6 12h12', show: function (m) { return m !== 'invest'; } },
     { id: 'k-transit', tint: 'teal', f: { transit: 1 }, text: 'A metro station nearby', sub: 'Good for everyone at home, and for resale', icon: 'M7 3h10v13H7zM7 11h10M9 20l-2 2M15 20l2 2', show: function () { return true; } },
     { id: 'k-community', tint: 'beige', f: { community: 1 }, text: 'A gated society with a clubhouse', sub: 'Pool, gym, play areas, security', icon: 'M4 21V9l8-5 8 5v12M9 21v-6h6v6', show: function () { return true; } },
@@ -80,7 +79,7 @@
     { id: 'k-resale', tint: 'teal', f: { investment: 1, transit: 0.5 }, text: 'Easy to resell later', sub: 'A sought-after area and layout', icon: 'M4 17l6-6 4 4 6-6M14 9h6v6', show: function (m) { return m !== 'live'; } },
     { id: 't-commute-space', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Shorter commute', { commute: 3 }, 'M5 17h14M7 17l1.5-5h7L17 17M8 20v-3M16 20v-3M9 12V9h6v3'], ['More space', { space: 3 }, 'M4 4h16v16H4zM4 12h8V4M12 16h8']], show: function (m) { return m !== 'invest'; } },
     { id: 't-price-new', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }, 'M7 5h10M7 9h10M11 5c3 0 5 2 5 4s-2 4-5 4H8l7 7'], ['Newer building', { building: 3 }, 'M6 21V5l6-2 6 2v16M10 8h4M10 12h4M10 16h4']], show: function () { return true; } },
-    { id: 't-quiet-connected', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['A quiet lane', { safety: 2, parks: 1 }, 'M12 3l5 8H7zM12 11v10M4 21h16'], ['Close to shops and metro', { shops: 2, transit: 2 }, 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2']], show: function (m) { return m !== 'invest'; } },
+    { id: 't-quiet-connected', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['A quiet lane', { parks: 2 }, 'M12 3l5 8H7zM12 11v10M4 21h16'], ['Close to shops and metro', { shops: 2, transit: 2 }, 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2']], show: function (m) { return m !== 'invest'; } },
     { id: 't-price-rent', kind: 'pair', q: 'If you can\u2019t have both, which wins?', opts: [['Lower price', { price: 3 }, 'M7 5h10M7 9h10M11 5c3 0 5 2 5 4s-2 4-5 4H8l7 7'], ['Stronger rental demand', { investment: 3 }, 'M4 12l8-7 8 7M9 20v-6h6v6']], show: function (m) { return m !== 'live'; } }
   ];
   var HOUSEHOLD = [['partner', 'Partner'], ['children', 'Children'], ['parents', 'Parents'], ['pets', 'Pets'], ['solo', 'Just me']];
@@ -124,13 +123,14 @@
     FACTORS.forEach(function (f) {
       if (f.id === 'schools' && S.household.indexOf('children') < 0) return;
       if (f.id === 'investment' && S.ess.motivation === 'live') return;
+      if (f.id === 'safety') return;
       list.push({ id: f.id });
     });
     return list;
   }
   function weightsFromQuestions() {
     var w = {};
-    FACTORS.forEach(function (f) { var a = S.qAnswers[f.id]; w[f.id] = a == null ? 0 : a === 'na' ? 0 : a; });
+    FACTORS.forEach(function (f) { var a = S.qAnswers[f.id]; w[f.id] = f.id === 'safety' && a == null ? DEFAULT_WEIGHTS.live.safety : a == null ? 0 : a === 'na' ? 0 : a; });
     return w;
   }
 
