@@ -255,11 +255,11 @@
   }
 
   // ---------- Layout ----------
-  var MAIN = { discover: 1, home: 1, saved: 1, compare: 1, you: 1 };
+  var MAIN = { discover: 1, home: 1, saved: 1, compare: 1, best: 1, you: 1 };
   function shell(route, inner) {
     if (!MAIN[route]) return '<main class="setup" id="main">' + inner + '</main>';
     var nav = [['discover', 'Discover', 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'], ['saved', 'Saved', 'M6 3h12v18l-6-4-6 4z'], ['priorities', 'Priorities', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0'], ['you', 'You', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0']];
-    var cur = route === 'home' ? 'discover' : route === 'compare' ? 'saved' : route;
+    var cur = route === 'home' ? 'discover' : (route === 'compare' || route === 'best') ? 'saved' : route;
     var links = nav.map(function (n) {
       var act = n[0] === 'priorities' ? 'data-action="open-priorities"' : 'href="#/' + n[0] + '"';
       var tag = n[0] === 'priorities' ? 'button type="button"' : 'a';
@@ -267,8 +267,8 @@
       return '<' + tag + ' class="nav-link' + (cur === n[0] ? ' is-active' : '') + '" ' + act + (cur === n[0] ? ' aria-current="page"' : '') + '><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + n[2] + '"/></svg><span>' + n[1] + '</span></' + end + '>';
     }).join('');
     var aiCtl = S.mode === 'step'
-      ? '<label class="ai-switch"><input type="checkbox" data-action="toggle-ai"' + (S.aiEnabled ? ' checked' : '') + '> Enable AI mode</label>'
-      : '<span class="ai-pill">AI help on</span>';
+      ? '<label class="ai-switch"><span>Enable AI mode</span><input type="checkbox" class="switch" data-action="toggle-ai"' + (S.aiEnabled ? ' checked' : '') + '></label>'
+      : '<span class="topbar-end" aria-hidden="true"></span>';
     return '<header class="topbar"><a class="brand" href="#/discover"><svg class=\'logo-mark\' aria-hidden=\'true\' viewBox=\'0 0 32 32\' width=\'28\' height=\'28\'><rect width=\'32\' height=\'32\' rx=\'9\' fill=\'#161616\'/><path d=\'M9 22V14l7-5 7 5v8\' fill=\'none\' stroke=\'#F29B38\' stroke-width=\'2.2\' stroke-linejoin=\'round\'/><path d=\'M13 22v-4.5a3 3 0 0 1 6 0V22\' fill=\'none\' stroke=\'#fff\' stroke-width=\'2.2\'/></svg><span>Decision Room</span></a><nav class="nav nav-top" aria-label="Main">' + links + '</nav>' + aiCtl + '</header>' +
       '<main id="main" class="main main-' + route + '">' + inner + '</main>' +
       '<nav class="nav nav-bottom" aria-label="Main">' + links + '</nav>';
@@ -580,19 +580,62 @@
   }
 
   // ---------- Saved & Compare ----------
+  function savedLive() { var w = Object.keys(S.status).filter(function (id) { return S.status[id].step === 'Walk away'; }); return { walked: w, short: S.saved.filter(function (id) { return w.indexOf(id) < 0 && homeById(id); }) }; }
+  function bestOfSaved() {
+    var ids = savedLive().short; if (ids.length < 2) return null;
+    var mid = function (e) { return (e.lo + e.hi) / 2; };
+    return ids.map(evalOf).filter(function (e) { return e.gate.status !== 'out'; }).sort(function (x, y) { return mid(y) - mid(x); });
+  }
   function vSaved() {
-    var tab = S.savedTab || 'short';
-    var walked = Object.keys(S.status).filter(function (id) { return S.status[id].step === 'Walk away'; });
-    var short = S.saved.filter(function (id) { return walked.indexOf(id) < 0; });
-    var ids = tab === 'walked' ? walked : short;
-    var tabs = '<div class="tabs" role="tablist"><button type="button" role="tab" class="tab' + (tab === 'short' ? ' is-on' : '') + '" data-action="saved-tab" data-value="short">Shortlist · ' + short.length + '</button><button type="button" role="tab" class="tab' + (tab === 'walked' ? ' is-on' : '') + '" data-action="saved-tab" data-value="walked">Walked away · ' + walked.length + '</button></div>';
-    var list = ids.length ? ids.map(function (id) {
-      var e = evalOf(id), h = e.home, st = S.status[id], inCmp = S.compare.indexOf(id) >= 0;
-      return '<article class="card card-row">' + photo(h, 'photo-thumb') + '<div class="card-body"><div class="card-top"><h3><a href="#/home/' + id + '">' + esc(h.name) + '</a></h3><span class="price">' + Format.price(h.price) + '</span></div>' + band(e) +
-        (st ? '<p class="meta">Next step: <b>' + esc(st.step) + '</b>' + (st.reason ? ' · ' + esc(st.reason) : '') + '</p>' : '') +
-        (tab === 'walked' ? '<button type="button" class="btn btn-small" data-action="restore" data-id="' + id + '">Restore</button>' : '<label class="cmp-check"><input type="checkbox" data-action="cmp-toggle" data-id="' + id + '"' + (inCmp ? ' checked' : '') + '> Compare</label>') + '</div></article>';
-    }).join('') : '<p class="empty">' + (tab === 'walked' ? 'Homes you walk away from appear here, with your reason.' : 'Save homes from Discover to build your shortlist.') + '</p>';
-    return '<div class="page"><h1>Saved</h1>' + tabs + list + (tab === 'short' && short.length ? '<a class="btn btn-primary btn-block" href="#/compare">Compare ' + S.compare.length + ' of 3</a>' : '') + '</div>';
+    var sl = savedLive(), short = sl.short, walked = sl.walked;
+    var sel = S.compare.filter(function (id) { return short.indexOf(id) >= 0; });
+    var ranked = bestOfSaved(), best = ranked && ranked[0];
+    // Two ways to decide, always on top
+    var bestCard = '<section class="sv-action sv-best' + (best ? '' : ' is-off') + '"><p class="sv-k">' + aiBadge() + ' Best of all saved</p>' +
+      (best ? '<p class="sv-h">' + esc(best.home.name) + '</p><p class="sv-sub">' + fitPill(best) + ' out of ' + short.length + ' saved</p><a class="btn btn-small sv-btn" href="#/best">Why this one? ›</a>'
+            : '<p class="sv-sub">Save 2 or more homes and AI picks the best fit for your priorities.</p>') + '</section>';
+    var cmpCard = '<section class="sv-action sv-cmp' + (sel.length >= 2 ? '' : ' is-off') + '"><p class="sv-k">Compare selected</p><p class="sv-h">' + sel.length + ' of 3</p><p class="sv-sub">' + (sel.length >= 2 ? 'Side by side, with a summary' : 'Select 2 or 3 homes below') + '</p>' +
+      (sel.length >= 2 ? '<a class="btn btn-small btn-primary sv-btn" href="#/compare">Compare ›</a>' : '<span class="btn btn-small sv-btn" aria-disabled="true">Compare</span>') + '</section>';
+    var list = short.length ? short.map(function (id) {
+      var e = evalOf(id), h = e.home, st = S.status[id], on = sel.indexOf(id) >= 0;
+      return '<article class="card sv-row' + (on ? ' is-sel' : '') + '">' +
+        '<button type="button" class="sv-check' + (on ? ' is-on' : '') + '" data-action="sv-select" data-id="' + id + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Deselect ' : 'Select ') + esc(h.name) + ' for comparing">' + (on ? '✓' : '') + '</button>' +
+        '<a class="sv-main" href="#/home/' + id + '">' + photo(h, 'photo-thumb') + '<span class="sv-text"><b>' + esc(h.name) + '</b><span class="muted">' + h.bhk + ' BHK · ' + esc(h.area) + (st ? ' · ' + esc(st.step) : '') + '</span><span class="sv-price">' + Format.price(h.price) + ' ' + fitPill(e) + '</span></span></a>' +
+        alertBtn(e, 'sv-alert') +
+        '<button type="button" class="sv-remove" data-action="unsave" data-id="' + id + '" aria-label="Remove ' + esc(h.name) + ' from saved">✕</button></article>';
+    }).join('') : '<p class="empty">Save homes from Discover with the ♡ to build your list.</p>';
+    var ruled = walked.length ? '<details class="sv-ruled"><summary>Ruled out · ' + walked.length + ' <span class="muted">hidden from Discover</span></summary>' + walked.map(function (id) {
+      var h = homeById(id), st = S.status[id]; return '<div class="sv-ruled-row"><span><b>' + esc(h.name) + '</b>' + (st.reason ? '<br><span class="muted">' + esc(st.reason) + '</span>' : '') + '</span><button type="button" class="btn btn-small" data-action="restore" data-id="' + id + '">Bring back</button></div>';
+    }).join('') + '</details>' : '';
+    return '<div class="page"><h1>Saved <span class="muted h-count">' + short.length + '</span></h1>' +
+      '<div class="sv-actions">' + bestCard + cmpCard + '</div>' + '<h2 class="sv-list-h">Your homes</h2>' + list + ruled + '</div>';
+  }
+
+  // Why the best of all saved wins: where it's ahead, where others beat it, and the full ranking.
+  function vBest() {
+    var ranked = bestOfSaved();
+    if (!ranked || !ranked.length) return '<div class="page"><a class="back" href="#/saved">‹ Saved</a><h1>Best of all saved</h1><p class="empty">Save 2 or more homes first.</p></div>';
+    var best = ranked[0], others = ranked.slice(1), next = others[0];
+    var rowOf = function (e, id) { return e.rows.filter(function (r) { return r.id === id; })[0]; };
+    var ahead = [], behind = [];
+    best.rows.filter(function (r) { return r.w > 0; }).sort(function (x, y) { return y.w - x.w; }).forEach(function (r) {
+      var bestOther = null; others.forEach(function (o) { var orow = rowOf(o, r.id); if (orow.v != null && (!bestOther || orow.v > bestOther.row.v)) bestOther = { e: o, row: orow }; });
+      if (r.v == null || !bestOther) return;
+      if (r.v > bestOther.row.v + 0.05) ahead.push({ r: r, o: bestOther });
+      else if (bestOther.row.v > r.v + 0.05) behind.push({ r: r, o: bestOther });
+    });
+    var item = function (x, win) { return '<li><span class="why-ico ' + (win ? 'is-win' : 'is-lose') + '" aria-hidden="true">' + (win ? '↑' : '↓') + '</span><span><b>' + esc(x.r.label) + '</b> <span class="muted">weight ' + x.r.w + '</span><br>' +
+      (win ? esc(x.r.d || '') + ' <span class="muted">vs ' + esc(x.o.e.home.name) + ': ' + esc(x.o.row.d || '') + '</span>' : esc(x.o.e.home.name) + ' is better: ' + esc(x.o.row.d || '')) + '</span></li>'; };
+    var gap = Math.round((best.lo + best.hi) / 2 - (next.lo + next.hi) / 2);
+    return '<div class="page"><a class="back" href="#/saved">‹ Saved</a>' +
+      '<section class="verdict"><p class="verdict-k">' + aiBadge() + ' Best of your ' + ranked.length + ' saved homes</p><p class="verdict-h">' + esc(best.home.name) + '</p>' +
+      '<p class="verdict-why">' + (gap <= 3 ? 'Only just ahead of ' + esc(next.home.name) + ', so a visit to both is worth it.' : 'Clearly ahead of ' + esc(next.home.name) + ' by about ' + gap + ' points.') + '</p></section>' +
+      '<section class="panel why-panel"><h2>Why it wins</h2><ul class="why-list">' + (ahead.length ? ahead.slice(0, 4).map(function (x) { return item(x, true); }).join('') : '<li class="muted">Not clearly ahead on any single priority; it wins on balance.</li>') + '</ul></section>' +
+      (behind.length ? '<section class="panel why-panel"><h2>Where others beat it</h2><ul class="why-list">' + behind.slice(0, 3).map(function (x) { return item(x, false); }).join('') + '</ul></section>' : '') +
+      (alertsOf(best).length ? '<button type="button" class="alert-row" data-action="alerts" data-id="' + best.home.id + '"><span class="alert-dot" aria-hidden="true">' + ICON.alert + '</span><span>' + alertsOf(best).length + ' things to check before you decide</span><span aria-hidden="true">›</span></button>' : '') +
+      '<section class="panel why-panel"><h2>All saved, ranked</h2><ol class="rank-list">' + ranked.map(function (e) { var m = Math.round((e.lo + e.hi) / 2); return '<li><a href="#/home/' + e.home.id + '">' + esc(e.home.name) + '</a><span class="rank-bar"><i style="width:' + m + '%"></i></span>' + fitPill(e) + '</li>'; }).join('') + '</ol></section>' +
+      '<div class="row-wrap cmp-actions"><a class="btn btn-primary" href="#/home/' + best.home.id + '">Open ' + esc(best.home.name) + '</a><button type="button" class="btn" data-action="compare-top">Compare the top ' + Math.min(3, ranked.length) + '</button></div>' +
+      '<p class="muted small">Picked from your priorities and must-haves; you can change them anytime.</p></div>';
   }
 
   // Best fit, worked out from the buyer's own weights. Shown on its own, in two lines at most.
@@ -869,7 +912,7 @@
     if (MAIN[route] && !S.weights) { route = S.mode ? 'priorities' : 'welcome'; }
     if ((route === 'cards' || route === 'questions') && !S.mode) route = 'mode';
     destroyMaps();
-    var views = { welcome: vWelcome, essentials: vEssentials, mode: vMode, cards: vCards, questions: vQuestions, must: vMust, priorities: vPriorities, matching: vMatching, discover: vDiscover, saved: vSaved, compare: vCompare, you: vYou };
+    var views = { welcome: vWelcome, essentials: vEssentials, mode: vMode, cards: vCards, questions: vQuestions, must: vMust, priorities: vPriorities, matching: vMatching, discover: vDiscover, saved: vSaved, compare: vCompare, best: vBest, you: vYou };
     var html = route === 'home' ? vHome(parts[1]) : (views[route] || vWelcome)();
     $('#app').innerHTML = shell(route, html) + overlay();
     document.title = 'Decision Room · ' + (route.charAt(0).toUpperCase() + route.slice(1));
@@ -970,6 +1013,17 @@
     if (a === 'save') { save(id); return; }
     if (a === 'ev') { toast(t.getAttribute('data-l') + ': ' + t.getAttribute('data-s')); return; }
     if (a === 'tab') { slideThumb(t); S.tab = val; persist(); setTimeout(render, 220); return; }
+    if (a === 'sv-select') {
+      var ci = S.compare.indexOf(id);
+      if (ci >= 0) S.compare.splice(ci, 1); else if (S.compare.length >= 3) { toast('Compare holds 3. Deselect one first.'); return; } else S.compare.push(id);
+      persist(); render(); return;
+    }
+    if (a === 'unsave') {
+      var keepS = S.saved.slice(), keepC = S.compare.slice(), nm = homeById(id).name;
+      S.saved = S.saved.filter(function (x) { return x !== id; }); S.compare = S.compare.filter(function (x) { return x !== id; }); persist(); render();
+      toast(nm + ' removed', 'Undo', function () { S.saved = keepS; S.compare = keepC; persist(); render(); }); return;
+    }
+    if (a === 'compare-top') { S.compare = bestOfSaved().slice(0, 3).map(function (e) { return e.home.id; }); S.compareNote = ''; persist(); go('compare'); return; }
     if (a === 'saved-tab') { S.savedTab = val; persist(); render(); return; }
     if (a === 'restore') { delete S.status[id]; persist(); render(); toast('Restored to your shortlist'); return; }
     if (a === 'open-next') { UI.overlay = { type: 'next', id: id }; render(); return; }
