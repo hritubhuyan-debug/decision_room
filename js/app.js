@@ -1148,5 +1148,7 @@
   });
 
   window.addEventListener('hashchange', function () { UI.overlay = null; UI.morph = null; window.scrollTo(0, 0); render(); });
+  // Hooks for the scenario mode (js/tour.js)
+  window.DR = { S: function () { return S; }, UI: UI, persist: persist, render: render, weightsFromCards: weightsFromCards };
   render();
 })();
