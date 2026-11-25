@@ -829,3 +829,32 @@ a { color: var(--navy); }
 .cmp-cell { position: relative; min-width: 0; }
 .cmp-cell .cmp-home { height: 100%; }
 .cmp-alert { position: absolute; top: 12px; right: 12px; height: 24px; padding: 0 7px; }
+
+/* ---------- Sliders, from the slider reference: black fill, black knob with a white centre, ticks on the rest ---------- */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; margin: 0; background: transparent; cursor: pointer; --pct: 50%; }
+input[type=range]:focus { outline: none; }
+input[type=range]::-webkit-slider-runnable-track { height: 20px; border-radius: 999px; box-shadow: inset 0 1px 2px rgba(22,22,22,.06);
+  background: linear-gradient(90deg, #161616 0 var(--pct), transparent var(--pct)),
+              repeating-linear-gradient(90deg, rgba(22,22,22,.28) 0 1.5px, transparent 1.5px 6px) right 12px center / calc(100% - 24px) 8px no-repeat,
+              #EFEDEA; }
+input[type=range]::-moz-range-track { height: 20px; border-radius: 999px; background: repeating-linear-gradient(90deg, rgba(22,22,22,.28) 0 1.5px, transparent 1.5px 6px) right 12px center / calc(100% - 24px) 8px no-repeat, #EFEDEA; }
+input[type=range]::-moz-range-progress { height: 20px; border-radius: 999px; background: #161616; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; margin-top: -6px; border-radius: 50%; border: 0;
+  background: radial-gradient(circle, #fff 0 5px, #F2F0EC 5.5px 7px, #161616 7.5px); box-shadow: 0 6px 14px rgba(22,22,22,.28), 0 0 0 3px #fff; transition: transform 150ms var(--ease); }
+input[type=range]::-moz-range-thumb { width: 32px; height: 32px; border-radius: 50%; border: 0; background: radial-gradient(circle, #fff 0 5px, #161616 6px); box-shadow: 0 6px 14px rgba(22,22,22,.28), 0 0 0 3px #fff; }
+input[type=range]:active::-webkit-slider-thumb { transform: scale(1.08); }
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #161616; }
+input[type=range]:disabled { opacity: .45; cursor: not-allowed; }
+/* The 3-point blend: no ticks, just three labelled stops like "Minimum · Recommended · Great" */
+input[type=range].range-3::-webkit-slider-runnable-track { background: linear-gradient(90deg, #161616 0 var(--pct), transparent var(--pct)), #EFEDEA; }
+input[type=range].range-3::-moz-range-track { background: #EFEDEA; }
+.slider-row.alpha { background: var(--white); border-radius: var(--r-lg); padding: var(--s-4) var(--s-4) var(--s-3); box-shadow: var(--shadow); margin: var(--s-3) 0; }
+.alpha .slider-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s-2); }
+.alpha .slider-head label { font-weight: 600; }
+.alpha-now { font-size: var(--fs-sm); font-weight: 600; color: var(--white); background: var(--navy); padding: 3px 10px; border-radius: var(--r-pill); }
+.stops { display: flex; justify-content: space-between; margin: 6px 0 0; }
+.stop { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 4px 0; font: inherit; font-size: var(--fs-xs); color: var(--c-text-2); cursor: pointer; }
+.stop:first-child { align-items: flex-start; } .stop:last-child { align-items: flex-end; }
+.stop i { width: 5px; height: 5px; border-radius: 50%; background: rgba(22,22,22,.3); margin: 0 14px; }
+.stop.is-on { color: var(--navy); font-weight: 600; } .stop.is-on i { background: var(--navy); }
+.ai-mark { background: var(--accent) !important; }

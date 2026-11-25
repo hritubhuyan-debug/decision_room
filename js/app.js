@@ -425,7 +425,10 @@
         '<div class="slider-wrap">' + mark + '<input type="range" id="w-' + f.id + '" min="0" max="10" step="1" value="' + w[f.id] + '" data-action="weight" data-id="' + f.id + '"' + (locked ? ' disabled' : '') + '></div>' + note + '</div>';
     }).join('');
     var high = FACTORS.filter(function (f) { return w[f.id] >= 9; }).length;
-    var alpha = S.ess.motivation === 'both' ? '<div class="slider-row alpha"><div class="slider-head"><label for="alpha">Live in ↔ Invest</label></div><input type="range" id="alpha" min="0" max="10" step="1" value="' + Math.round(S.alpha * 10) + '" data-action="alpha"><div class="scale-ends"><span>Live in</span><span>Invest</span></div></div>' : '';
+    var aStep = Math.round(S.alpha * 2), aLabels = ['Mostly live in', 'Balanced', 'Mostly invest'];
+    var alpha = S.ess.motivation === 'both' ? '<div class="slider-row alpha"><div class="slider-head"><label for="alpha">Living in vs investing</label><span class="alpha-now" id="alpha-now">' + aLabels[aStep] + '</span></div>' +
+      '<input type="range" class="range-3" id="alpha" min="0" max="2" step="1" value="' + aStep + '" data-action="alpha" aria-valuetext="' + aLabels[aStep] + '">' +
+      '<div class="stops" aria-hidden="true">' + aLabels.map(function (l, k) { return '<button type="button" tabindex="-1" class="stop' + (k === aStep ? ' is-on' : '') + '" data-action="alpha-stop" data-value="' + k + '"><i></i>' + l + '</button>'; }).join('') + '</div></div>' : '';
     var whatif = aiOn() ? '<form class="whatif" data-action="whatif"><label for="whatif-in">' + aiBadge() + ' Ask a what-if</label><div class="row"><input id="whatif-in" maxlength="200" placeholder="What if commute matters most?" autocomplete="off"><button class="btn btn-primary" type="submit">Ask</button></div>' + aiBlock('whatif', function (r) { return r.json && r.json.note ? '<p class="ai-text">' + aiBadge() + ' ' + esc(r.json.note) + '</p>' : ''; }) + '</form>' : '';
     var scen = '<div class="scenarios"><button type="button" class="btn btn-ghost" data-action="save-scenario">Save as scenario</button>' + S.scenarios.map(function (s, i) { return '<button type="button" class="chip" data-action="apply-scenario" data-i="' + i + '">' + esc(s.name) + '</button>'; }).join('') + '</div>';
     var reset = aiOn() && S.suggested ? '<button type="button" class="btn btn-link" data-action="reset-suggested">Reset to AI suggestion</button>' : '';
@@ -758,6 +761,11 @@
     if (k) return L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=' + encodeURIComponent(k), { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO' });
     return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'tiles-osm', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
   }
+  // Sliders: the filled part of the track follows the value (styled in CSS with --pct).
+  function paintRange(el) { var min = +el.min || 0, max = +el.max || 100; el.style.setProperty('--pct', ((+el.value - min) / (max - min) * 100) + '%'); }
+  function paintRanges() { document.querySelectorAll('input[type=range]').forEach(paintRange); }
+  document.addEventListener('input', function (ev) { if (ev.target.type === 'range') paintRange(ev.target); }, true);
+
   function destroyMaps() { UI.amenLayer = null; [UI.map, UI.mini].forEach(function (m) { if (!m) return; m.stop(); m._onZoomTransitionEnd = function () {}; /* Leaflet would otherwise finish a zoom on a map that no longer exists */ m.remove(); }); UI.map = null; UI.mini = null; }
   function initDiscoverMap() {
     var el = $('#map'); if (!el) return;
@@ -866,6 +874,7 @@
     $('#app').innerHTML = shell(route, html) + overlay();
     document.title = 'Decision Room · ' + (route.charAt(0).toUpperCase() + route.slice(1));
     if (route === 'discover') { initDiscoverMap(); initCarousel(); }
+    paintRanges();
     if (route === 'cards') syncDeck();
     if (route === 'home' && aiOn()) { var hid = location.hash.split('/')[2]; if (homeById(hid) && !UI.ai['explain:' + hid]) runAI('explain:' + hid, 'explain', { buyer: buyerPayload(), home: homePayload(evalOf(hid)) }); }
     if (route === 'home' && S.tab === 'life') initMiniMap();
@@ -923,6 +932,7 @@
       commitCard(a === 'card-pick' ? val : null);
       return;
     }
+    if (a === 'alpha-stop') { var ar = document.getElementById('alpha'); if (ar) { ar.value = val; paintRange(ar); ar.dispatchEvent(new Event('change', { bubbles: true })); } return; }
     if (a === 'alerts') { UI.overlay = { type: 'alerts', id: id }; render(); return; }
     if (a === 'sort-cycle') { var order = ['fit', 'price', 'commute']; S.sort = order[(order.indexOf(S.sort) + 1) % 3]; persist(); render(); return; }
     if (a === 'filter') { S.filter = val; persist(); render(); return; }
@@ -1027,9 +1037,12 @@
     if (bind === 'sort') { S.sort = t.value; persist(); render(); return; }
     if (a === 'weight') { var next = clone(S.weights); next[t.getAttribute('data-id')] = +t.value; var msg = previewText(next); setWeights(next, msg); return; }
     if (a === 'alpha') {
-      S.alpha = +t.value / 10; var n2 = clone(S.weights);
+      S.alpha = +t.value / 2; var n2 = clone(S.weights);
       FACTORS.forEach(function (f) { if (!S.locks[f.id]) n2[f.id] = Math.round((1 - S.alpha) * DEFAULT_WEIGHTS.live[f.id] + S.alpha * DEFAULT_WEIGHTS.invest[f.id]); });
-      setWeights(n2, S.alpha < 0.5 ? 'Leaning towards living in' : S.alpha > 0.5 ? 'Leaning towards investment' : 'Balanced'); return;
+      var lab = ['Mostly live in', 'Balanced', 'Mostly invest'][+t.value]; t.setAttribute('aria-valuetext', lab);
+      var an = document.getElementById('alpha-now'); if (an) an.textContent = lab;
+      document.querySelectorAll('.stop').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-value') === t.value); });
+      paintRange(t); setWeights(n2, lab); return;
     }
     if (a === 'must') { S.must[t.getAttribute('data-id')] = t.checked; persist(); render(); return; }
     if (a === 'toggle-ai') { S.aiEnabled = t.checked; persist(); render(); toast(t.checked ? 'AI mode on. AI parts are marked “AI” and never change your sliders.' : 'AI mode off'); return; }
